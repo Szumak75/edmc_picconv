@@ -11,7 +11,7 @@ from threading import Thread
 from typing import Union, Any
 from jsktoolbox.attribtool import NoDynamicAttributes
 
-from rscan_libs.system import LogClient, LogProcessor
+from picconv_libs.system import LogClient, LogProcessor
 
 
 class BLogProcessor(NoDynamicAttributes):
