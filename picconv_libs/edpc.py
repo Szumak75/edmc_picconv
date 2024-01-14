@@ -29,7 +29,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     """edpc_object main class."""
 
     __pluginname: str
-    __shutting_down: bool
+    __shutting_down: bool = False
 
     __thqueue: Union[Queue, SimpleQueue]
     __thworker: Thread
@@ -39,7 +39,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
 
     def __init__(self) -> None:
         """Initialize main class."""
-        self.__shutting_down = False
+        self.shutting_down = False
 
         self.pluginname = "EDPC"
         version = "0.3.7"
