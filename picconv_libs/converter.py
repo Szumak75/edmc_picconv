@@ -64,7 +64,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         )
 
         # init log subsystem
-        if isinstance(queue, (Queue, SimpleQueue)):
+        if not isinstance(queue, (Queue, SimpleQueue)):
             raise Raise.error(
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
                 TypeError,
