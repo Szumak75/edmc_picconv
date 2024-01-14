@@ -28,7 +28,12 @@ def plugin_start3(plugin_dir: str) -> str:
     edpc_object.logger.debug = f"Plugin dir: {plugin_dir}"
 
     # set loglevel from config
-    edpc_object.log_processor.loglevel = LogLevels().get(config.get_str("loglevel"))
+    edpc_object.log_processor.loglevel = (
+        LogLevels().get(config.get_str("loglevel"))
+        if config.get_str("loglevel") is not None
+        and LogLevels().has_key(config.get_str("loglevel"))
+        else LogLevels().debug
+    ) # type: ignore
 
     # config
     edpc_object.cdial.picsrcdir = tk.StringVar(value=config.get_str("picsrcdir"))
