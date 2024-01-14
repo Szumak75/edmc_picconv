@@ -19,7 +19,7 @@ class BMessages(NoDynamicAttributes):
     Container for list of messages
     """
 
-    __messages: List[str]
+    __messages: List[str] = None  # type: ignore
 
     def has_messages(self) -> bool:
         """Check if has messages."""

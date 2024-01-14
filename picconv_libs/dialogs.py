@@ -20,8 +20,8 @@ from picconv_libs.system import Env, LogClient
 class ConfigDialog(BLogClient, NoDynamicAttributes):
     """Create config dialog for plugin."""
 
-    __vars: Dict[str, Any]
-    __pic_status: nb.Label
+    __vars: Dict[str, Any] = None  # type: ignore
+    __pic_status: nb.Label = None  # type: ignore
 
     def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize ConfigDialog class."""

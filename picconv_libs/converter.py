@@ -36,8 +36,8 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
     # "Body":"Plaa Thua MS-Y b56-0 1 a"
     # }
 
-    __templates: Dict[str, str]
-    __vars: Dict[str, Any]
+    __templates: Dict[str, str] = None  # type: ignore
+    __vars: Dict[str, Any] = None  # type: ignore
 
     def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize PicConverter class."""

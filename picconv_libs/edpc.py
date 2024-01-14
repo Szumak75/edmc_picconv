@@ -28,14 +28,14 @@ from typing import List, Union
 class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     """edpc_object main class."""
 
-    __pluginname: str
+    __pluginname: str = None  # type: ignore
     __shutting_down: bool = False
 
-    __thqueue: Union[Queue, SimpleQueue]
-    __thworker: Thread
+    __thqueue: Union[Queue, SimpleQueue] = None  # type: ignore
+    __thworker: Thread = None  # type: ignore
 
-    cdial: ConfigDialog
-    engine: PicConverter
+    cdial: ConfigDialog = None  # type: ignore
+    engine: PicConverter = None  # type: ignore
 
     def __init__(self) -> None:
         """Initialize main class."""
