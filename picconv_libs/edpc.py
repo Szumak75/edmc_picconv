@@ -39,7 +39,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
 
     def __init__(self) -> None:
         """Initialize main class."""
-        self.shutting_down = False
+        self.__shutting_down = False
 
         self.pluginname = "EDPC"
         version = "0.3.7"
