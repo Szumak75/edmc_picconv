@@ -1,27 +1,199 @@
 # -*- coding: UTF-8 -*-
 """
-Created on 30 dec 2022.
+  Author:  Jacek 'Szumak' Kotlarski --<szumak@virthost.pl>
+  Created: 18.12.2023
 
-@author: szumak@virthost.pl
+  Purpose:
 """
 
+import ctypes
 import inspect
 import logging
 import os
+import platform
 import subprocess
 import sys
 import tempfile
+from typing import Union, Optional, List, Dict, Any
+from distutils.spawn import find_executable
 from logging.handlers import RotatingFileHandler
 from queue import Queue, SimpleQueue
+from jsktoolbox.attribtool import NoDynamicAttributes
+from jsktoolbox.raisetool import Raise
 
-from picconv_libs.mclass import NoNewAttrs
-from picconv_libs.mraise import Raiser
+
+class Clip(NoDynamicAttributes):
+    """System clipboard tool."""
+
+    __copy = None
+    __paste = None
+
+    def __init__(self) -> None:
+        """Create instance of class."""
+        setcb = None
+        getcb = None
+        if os.name == "nt" or platform.system() == "Windows":
+            import ctypes
+
+            getcb = self.__win_get_clipboard
+            setcb = self.__win_set_clipboard
+        elif os.name == "mac" or platform.system() == "Darwin":
+            getcb = self.__mac_get_clipboard
+            setcb = self.__mac_set_clipboard
+        elif os.name == "posix" or platform.system() == "Linux":
+            xclipExists = os.system("which xclip > /dev/null") == 0
+            if xclipExists:
+                getcb = self.__xclip_get_clipboard
+                setcb = self.__xclip_set_clipboard
+            else:
+                xselExists = os.system("which xsel > /dev/null") == 0
+                if xselExists:
+                    getcb = self.__xsel_get_clipboard
+                    setcb = self.__xsel_set_clipboard
+                try:
+                    import gtk
+
+                    getcb = self.__gtk_get_clipboard
+                    setcb = self.__gtk_set_clipboard
+                except Exception:
+                    try:
+                        import PyQt4.QtCore
+                        import PyQt4.QtGui
+
+                        app = PyQt4.QApplication([])
+                        cb = PyQt4.QtGui.QApplication.clipboard()
+                        getcb = self.__qt_get_clipboard
+                        setcb = self.__qt_set_clipboard
+                    except:
+                        print(
+                            Raise.message(
+                                "Pyperclip requires the gtk or PyQt4 module installed, or the xclip command.",
+                                self.__class__.__name__,
+                                inspect.currentframe(),
+                            )
+                        )
+        self.__copy = setcb
+        self.__paste = getcb
+
+    @property
+    def is_tool(self):
+        """Return True if the tool is avaiable."""
+        return self.__copy is not None and self.__paste is not None
+
+    @property
+    def copy(self):
+        """Return copy handler."""
+        return self.__copy
+
+    @property
+    def paste(self):
+        """Return paste handler."""
+        return self.__paste
+
+    def __win_get_clipboard(self):
+        """Get windows clipboard data."""
+        ctypes.windll.user32.OpenClipboard(0)
+        pcontents = ctypes.windll.user32.GetClipboardData(1)  # 1 is CF_TEXT
+        data = ctypes.c_char_p(pcontents).value
+        # ctypes.windll.kernel32.GlobalUnlock(pcontents)
+        ctypes.windll.user32.CloseClipboard()
+        return data
+
+    def __win_set_clipboard(self, text) -> None:
+        """Set windows clipboard data."""
+        text = str(text)
+        GMEM_DDESHARE = 0x2000
+        ctypes.windll.user32.OpenClipboard(0)
+        ctypes.windll.user32.EmptyClipboard()
+        try:
+            # works on Python 2 (bytes() only takes one argument)
+            hCd = ctypes.windll.kernel32.GlobalAlloc(
+                GMEM_DDESHARE, len(bytes(text)) + 1
+            )
+        except TypeError:
+            # works on Python 3 (bytes() requires an encoding)
+            hCd = ctypes.windll.kernel32.GlobalAlloc(
+                GMEM_DDESHARE, len(bytes(text, "ascii")) + 1
+            )
+        pchData = ctypes.windll.kernel32.GlobalLock(hCd)
+        try:
+            # works on Python 2 (bytes() only takes one argument)
+            ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text))
+        except TypeError:
+            # works on Python 3 (bytes() requires an encoding)
+            ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text, "ascii"))
+        ctypes.windll.kernel32.GlobalUnlock(hCd)
+        ctypes.windll.user32.SetClipboardData(1, hCd)
+        ctypes.windll.user32.CloseClipboard()
+
+    def __mac_set_clipboard(self, text) -> None:
+        """Set MacOS clipboard data."""
+        text = str(text)
+        outf = os.popen("pbcopy", "w")
+        outf.write(text)
+        outf.close()
+
+    def __mac_get_clipboard(self) -> str:
+        """Get MacOS clipboard data."""
+        outf = os.popen("pbpaste", "r")
+        content = outf.read()
+        outf.close()
+        return content
+
+    def __gtk_get_clipboard(self):
+        """Get GTK clipboard data."""
+        return gtk.Clipboard().wait_for_text()
+
+    def __gtk_set_clipboard(self, text) -> None:
+        """Set GTK clipboard data."""
+        global cb
+        text = str(text)
+        cb = gtk.Clipboard()
+        cb.set_text(text)
+        cb.store()
+
+    def __qt_get_clipboard(self) -> str:
+        """Get QT clipboard data."""
+        return str(cb.text())
+
+    def __qt_set_clipboard(self, text) -> None:
+        """Set QT clipboard data."""
+        text = str(text)
+        cb.setText(text)
+
+    def __xclip_set_clipboard(self, text) -> None:
+        """Set xclip clipboard data."""
+        text = str(text)
+        outf = os.popen("xclip -selection c", "w")
+        outf.write(text)
+        outf.close()
+
+    def __xclip_get_clipboard(self) -> str:
+        """Get xclip clipboard data."""
+        outf = os.popen("xclip -selection c -o", "r")
+        content = outf.read()
+        outf.close()
+        return content
+
+    def __xsel_set_clipboard(self, text) -> None:
+        """Set xsel clipboard data."""
+        text = str(text)
+        outf = os.popen("xsel -i", "w")
+        outf.write(text)
+        outf.close()
+
+    def __xsel_get_clipboard(self) -> str:
+        """Get xsel clipboard data."""
+        outf = os.popen("xsel -o", "r")
+        content = outf.read()
+        outf.close()
+        return content
 
 
-class Directory(NoNewAttrs):
-    """Container class."""
+class Directory(NoDynamicAttributes):
+    """Container class to store the directory path."""
 
-    __dir = None
+    __dir: str = None  # type: ignore
 
     def is_directory(self, path_string: str) -> bool:
         """Check if the given string is a directory.
@@ -38,7 +210,7 @@ class Directory(NoNewAttrs):
         return self.__dir
 
     @dir.setter
-    def dir(self, arg: str) -> str:
+    def dir(self, arg: str) -> None:
         """Setter for directory string.
 
         given path must exists.
@@ -47,22 +219,22 @@ class Directory(NoNewAttrs):
             self.__dir = arg
 
 
-class Env(NoNewAttrs):
-    """Environmentall class."""
+class Env(NoDynamicAttributes):
+    """Environmental class."""
 
-    __tmp = None
-    __home = None
+    __tmp: str = None  # type: ignore
+    __home: str = None  # type: ignore
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Env class."""
-        home = os.getenv("HOME")
+        home: Optional[str] = os.getenv("HOME")
         if home is None:
             home = os.getenv("HOMEPATH")
             if home is not None:
                 home = f"{os.getenv('HOMEDRIVE')}{home}"
-        self.__home = home
+        self.__home = home if home else ""
 
-        tmp = os.getenv("TMP")
+        tmp: Optional[str] = os.getenv("TMP")
         if tmp is None:
             tmp = os.getenv("TEMP")
             if tmp is None:
@@ -75,14 +247,16 @@ class Env(NoNewAttrs):
             return self.home
         return directory
 
-    def os_arch(self):
+    def os_arch(self) -> str:
         """Return multiplatform os architecture."""
         os_arch = "32-bit"
         if os.name == "nt":
-            output = subprocess.check_output(["wmic", "os", "get", "OSArchitecture"])
+            output = subprocess.check_output(
+                ["wmic", "os", "get", "OSArchitecture"]
+            ).decode()
             os_arch = output.split()[1]
         else:
-            output = subprocess.check_output(["uname", "-m"])
+            output: str = subprocess.check_output(["uname", "-m"]).decode()
             if "x86_64" in output:
                 os_arch = "64-bit"
             else:
@@ -90,7 +264,7 @@ class Env(NoNewAttrs):
         return os_arch
 
     @property
-    def is_64bits(self):
+    def is_64bits(self) -> bool:
         """Check 64bits platform."""
         return sys.maxsize > 2**32
 
@@ -105,23 +279,24 @@ class Env(NoNewAttrs):
         return self.__tmp
 
 
-class Log(NoNewAttrs):
+class Log(NoDynamicAttributes):
     """Create Log container class."""
 
-    __data = None
-    __level = None
+    __data: List[str] = None  # type: ignore
+    __level: int = None  # type: ignore
 
-    def __init__(self, level):
-        """Class construktor."""
+    def __init__(self, level) -> None:
+        """Class constructor."""
         self.__data = []
         ll_test = LogLevels()
         if isinstance(level, int) and ll_test.has_key(level):
             self.__level = level
         else:
-            raise Raiser().type_error(
+            raise Raise.error(
+                f"Int type level expected, '{type(level)}' received.",
+                TypeError,
                 self.__class__.__name__,
                 inspect.currentframe(),
-                f"Int type level expected, '{type(level)}' received.",
             )
 
     @property
@@ -130,17 +305,16 @@ class Log(NoNewAttrs):
         return self.__level
 
     @property
-    def log(self) -> list:
+    def log(self) -> List[str]:
         """Get list of logs."""
         return self.__data
 
     @log.setter
-    def log(self, arg):
+    def log(self, arg: Optional[Union[List, str]]) -> None:
         """Set data log."""
-        if arg is None or (isinstance(arg, list) and not bool(arg)):
-            self.__data = None
+        if arg is None or (isinstance(arg, List) and not bool(arg)):
             self.__data = []
-        if isinstance(arg, list):
+        if isinstance(arg, List):
             for msg in arg:
                 self.__data.append(f"{msg}")
         elif arg is None:
@@ -149,25 +323,25 @@ class Log(NoNewAttrs):
             self.__data.append(f"{arg}")
 
 
-class LogProcessor(NoNewAttrs):
-    """Give me log processor access API."""
+class LogProcessor(NoDynamicAttributes):
+    """Log processor access API."""
 
-    __name = None
-    __engine = None
-    __loglevel = None
+    __name: str = None  # type: ignore
+    __engine: logging.Logger = None  # type: ignore
+    __loglevel: int = None  # type: ignore
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """Create instance class object for processing single message."""
         # name of app
         self.__name = name
         self.loglevel = LogLevels().notset
         self.__logger_init()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Destroy log instance."""
         self.close()
 
-    def __logger_init(self):
+    def __logger_init(self) -> None:
         """Initialize logger engine."""
         self.close()
 
@@ -185,15 +359,15 @@ class LogProcessor(NoNewAttrs):
         self.__engine.addHandler(hlog)
         self.__engine.info("Logger initialization complete")
 
-    def close(self):
+    def close(self) -> None:
         """Close log subsystem."""
         if self.__engine is not None:
             for handler in self.__engine.handlers:
                 handler.close()
                 self.__engine.removeHandler(handler)
-            self.__engine = None
+            self.__engine = None  # type: ignore
 
-    def send(self, message: Log):
+    def send(self, message: Log) -> None:
         """Send single message to log engine."""
         lgl = LogLevels()
         if isinstance(message, Log):
@@ -214,12 +388,13 @@ class LogProcessor(NoNewAttrs):
                     self.__engine.warning("%s", msg)
             else:
                 for msg in message.log:
-                    self.__engine.notset("%s", msg)
+                    self.__engine.notset("%s", msg)  # type: ignore
         else:
-            raise Raiser().type_error(
+            raise Raise.error(
+                f"Log type expected, {type(message)} received.",
+                TypeError,
                 self.__class__.__name__,
                 inspect.currentframe(),
-                f"Log type expected, {type(message)} received.",
             )
 
     @property
@@ -228,7 +403,7 @@ class LogProcessor(NoNewAttrs):
         return self.__loglevel
 
     @loglevel.setter
-    def loglevel(self, arg: int):
+    def loglevel(self, arg: int) -> None:
         """Setter for log level parameter."""
         if self.__loglevel == arg:
             log = Log(LogLevels().debug)
@@ -247,21 +422,27 @@ class LogProcessor(NoNewAttrs):
         self.__logger_init()
 
 
-class LogClient(NoNewAttrs):
-    """Give me log client class API."""
+class LogClient(NoDynamicAttributes):
+    """Log client class API."""
 
-    __queue = None
+    __queue: Union[Queue, SimpleQueue] = None  # type: ignore
 
-    def __init__(self, queue):
+    def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Create instance class object."""
         if isinstance(queue, (Queue, SimpleQueue)):
             self.__queue = queue
         else:
-            raise Raiser().type_error(
-                self.__class__.__name__,
-                inspect.currentframe,
+            raise Raise.error(
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
+                TypeError,
+                self.__class__.__name__,
+                inspect.currentframe(),
             )
+
+    @property
+    def queue(self) -> Union[Queue, SimpleQueue]:
+        """Give me queue object."""
+        return self.__queue
 
     @property
     def critical(self) -> str:
@@ -269,7 +450,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @critical.setter
-    def critical(self, message: str or list):
+    def critical(self, message: Union[str, List]) -> None:
         """Setter for critical messages.
 
         message: [str|list]
@@ -284,7 +465,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @debug.setter
-    def debug(self, message: str or list):
+    def debug(self, message: Union[str, List]) -> None:
         """Setter for debug messages.
 
         message: [str|list]
@@ -299,7 +480,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @error.setter
-    def error(self, message: str or list):
+    def error(self, message: Union[str, List]) -> None:
         """Setter for error messages.
 
         message: [str|list]
@@ -314,7 +495,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @info.setter
-    def info(self, message: str or list):
+    def info(self, message: Union[str, List]) -> None:
         """Setter for info messages.
 
         message: [str|list]
@@ -329,7 +510,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @warning.setter
-    def warning(self, message: str or list):
+    def warning(self, message: Union[str, List]) -> None:
         """Setter for warning messages.
 
         message: [str|list]
@@ -344,7 +525,7 @@ class LogClient(NoNewAttrs):
         return ""
 
     @notset.setter
-    def notset(self, message: str or list):
+    def notset(self, message: Union[str, List]) -> None:
         """Setter for notset level messages.
 
         message: [str|list]
@@ -354,17 +535,17 @@ class LogClient(NoNewAttrs):
         self.__queue.put(log)
 
 
-class LogLevels(NoNewAttrs):
-    """Give me log levels keys.
+class LogLevels(NoDynamicAttributes):
+    """Log levels keys.
 
     This is a container class with properties that return the proper
     logging levels defined in the logging module.
     """
 
-    __keys = None
-    __txt = None
+    __keys: Dict[int, bool] = None  # type: ignore
+    __txt: Dict[str, int] = None  # type: ignore
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create Log instance."""
         # loglevel initialization database
         self.__keys = {
@@ -384,44 +565,47 @@ class LogLevels(NoNewAttrs):
             "NOTSET": self.notset,
         }
 
-    def get(self, level):
+    def get(self, level: Union[int, str]) -> Optional[int]:
         """Get int log level."""
         if level in self.__txt:
             return self.__txt[level]
         return None
 
-    def has_key(self, level):
+    def has_key(self, level: Union[int, str]) -> bool:
         """Check, if level is in proper keys."""
         if level in self.__keys or level in self.__txt:
             return True
         return False
 
     @property
-    def info(self):
+    def info(self) -> int:
         """Return info level."""
         return logging.INFO
 
     @property
-    def debug(self):
+    def debug(self) -> int:
         """Return debug level."""
         return logging.DEBUG
 
     @property
-    def warning(self):
+    def warning(self) -> int:
         """Return warning level."""
         return logging.WARNING
 
     @property
-    def error(self):
+    def error(self) -> int:
         """Return error level."""
         return logging.ERROR
 
     @property
-    def critical(self):
+    def critical(self) -> int:
         """Return critical level."""
         return logging.CRITICAL
 
     @property
-    def notset(self):
+    def notset(self) -> int:
         """Return notset level."""
         return logging.NOTSET
+
+
+# #[EOF]#######################################################################

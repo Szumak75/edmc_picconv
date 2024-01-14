@@ -8,38 +8,39 @@ Created on 18 dec 2022.
 import inspect
 import time
 import tkinter as tk
-from queue import SimpleQueue
+from queue import SimpleQueue, Queue
 from threading import Thread
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union, List
+
 
 import myNotebook as nb
 from config import config
 from picconv_libs.converter import PicConverter
 from picconv_libs.dialogs import ConfigDialog
-from picconv_libs.mclass import NoNewAttrs
-from picconv_libs.mlog import MLogClient, MLogProcessor
-from picconv_libs.mraise import Raiser
+from jsktoolbox.attribtool import NoDynamicAttributes
+from jsktoolbox.raisetool import Raise
+from picconv_libs.base_log import BLogClient, BLogProcessor
 from picconv_libs.system import Directory, LogClient, LogLevels, LogProcessor
 
 
-class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
+class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     """edpc_object main class."""
 
-    __pluginname = None
-    __shutting_down = None
+    __pluginname: str
+    __shutting_down: bool
 
-    __thqueue = None
-    __thworker = None
+    __thqueue: Union[Queue, SimpleQueue]
+    __thworker: Thread
 
-    cdial = None
-    engine = None
+    cdial: ConfigDialog
+    engine: PicConverter
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize main class."""
         self.shutting_down = False
 
         self.pluginname = "EDPC"
-        version = "0.2.8"
+        version = "0.3.1"
 
         # logging subsystem
         self.qlog = SimpleQueue()
@@ -67,38 +68,38 @@ class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
         self.engine.has_pillow()
 
     @property
-    def thworker(self):
+    def thworker(self) -> Thread:
         """Give me access to thworker variable."""
         return self.__thworker
 
     @thworker.setter
-    def thworker(self, value):
+    def thworker(self, value: Thread) -> None:
         self.__thworker = value
 
     @property
-    def pluginname(self):
+    def pluginname(self) -> str:
         """Give me acces to pluginname variable."""
         return self.__pluginname
 
     @pluginname.setter
-    def pluginname(self, value):
+    def pluginname(self, value: str) -> None:
         self.__pluginname = value
 
     @property
-    def shutting_down(self):
+    def shutting_down(self) -> bool:
         """Give me access to shutting_down flag."""
         return self.__shutting_down
 
     @shutting_down.setter
-    def shutting_down(self, value):
-        if isinstance(value, bool):
-            self.__shutting_down = value
-        else:
-            raise Raiser().type_error(
+    def shutting_down(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise Raise.error(
+                f"Boolean type expected, '{type(value)}' received.",
+                TypeError,
                 self.__class__.__name__,
                 inspect.currentframe(),
-                f"Boolean type expected, '{type(value)}' received.",
             )
+        self.__shutting_down = value
 
     def th_logger(self) -> None:
         """Def th_logger - thread logs processor."""
@@ -112,7 +113,7 @@ class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
     def th_worker(self) -> None:
         """Def th_worker - thread processor."""
         self.logger.info = "Starting worker..."
-        idle = [".", "..", "...", "...."]
+        idle: List[str] = [".", "..", "...", "...."]
         idle_idx = 0
         timestamp = int(time.time())
 
@@ -122,7 +123,7 @@ class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
                 idle_idx = 0
 
             # processing queue
-            timestamp = self.queue_processor(timestamp)
+            timestamp: int = self.queue_processor(timestamp)
 
             if timestamp < int(time.time()) and self.cdial.status is not None:
                 self.cdial.status["text"] = idle[idle_idx]
@@ -135,14 +136,14 @@ class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
         self.logger.info = "Worker finished..."
 
     @property
-    def qth(self):
+    def qth(self) -> Union[Queue, SimpleQueue]:
         """Give me th queue."""
         return self.__thqueue
 
     def queue_processor(self, timestamp: int) -> int:
         """Convert queue items."""
-        timebreake = 20
-        test = False
+        timebreake: int = 20
+        test: bool = False
 
         # processing queue
         while not self.qth.empty() and not self.shutting_down:
@@ -172,8 +173,9 @@ class EDPC(MLogProcessor, MLogClient, NoNewAttrs):
                 continue
             self.logger.info = "Done."
         if test:
-            msg = f"queue_processor: queue empty, shut down time: {self.shutting_down}"
-            self.logger.debug = msg
+            self.logger.debug = (
+                f"queue_processor: queue empty, shut down time: {self.shutting_down}"
+            )
         return timestamp
 
 
@@ -206,11 +208,16 @@ def plugin_start3(plugin_dir: str) -> str:
     )
 
     # init engine
-    edpc_object.engine.srcdir.dir = edpc_object.cdial.picsrcdir.get()
-    edpc_object.engine.dstdir.dir = edpc_object.cdial.picdstdir.get()
-    edpc_object.engine.remove = edpc_object.cdial.picmove.get()
-    edpc_object.engine.converttype = edpc_object.cdial.picconvert.get()
-    edpc_object.engine.suffix = edpc_object.cdial.pictype.get()
+    if edpc_object.cdial.picsrcdir is not None:
+        edpc_object.engine.srcdir.dir = edpc_object.cdial.picsrcdir.get()
+    if edpc_object.cdial.picdstdir is not None:
+        edpc_object.engine.dstdir.dir = edpc_object.cdial.picdstdir.get()
+    if edpc_object.cdial.picmove is not None:
+        edpc_object.engine.remove = edpc_object.cdial.picmove.get()
+    if edpc_object.cdial.picconvert is not None:
+        edpc_object.engine.converttype = edpc_object.cdial.picconvert.get()
+    if edpc_object.cdial.pictype is not None:
+        edpc_object.engine.suffix = edpc_object.cdial.pictype.get()
 
     # threading
     edpc_object.thworker.start()
@@ -225,11 +232,9 @@ def plugin_stop() -> None:
     edpc_object.shutting_down = True
     edpc_object.qth.put(None)
     edpc_object.thworker.join()
-    edpc_object.thworker = None
     edpc_object.logger.info = "Done."
     edpc_object.qlog.put(None)
     edpc_object.thlog.join()
-    edpc_object.thlog = None
 
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
@@ -243,7 +248,7 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     if not edpc_object.engine.has_pillow():
         edpc_object.logger.warning = "Picture type conversion not available."
         edpc_object.cdial.disable_conv_dialogs()
-    return frame
+    return frame  # type: ignore
 
 
 def plugin_app(parent: tk.Frame) -> Tuple[tk.Label, tk.Label]:
@@ -260,7 +265,7 @@ def plugin_app(parent: tk.Frame) -> Tuple[tk.Label, tk.Label]:
     # edpc_object.cdial.status = tk.Label(parent, text="...", foreground="yellow")
     # or not
     edpc_object.cdial.status = tk.Label(parent, text="")
-    return label, edpc_object.cdial.status
+    return label, edpc_object.cdial.status  # type: ignore
 
 
 def prefs_changed(cmdr: str, is_beta: bool) -> None:
@@ -323,7 +328,7 @@ def journal_entry(
         edpc_object.logger.debug = f"entry: {entry}"
         # edpc_object.logger.info = "state: {}".format(state)
 
-        event = {}
+        event: Dict[str, Any] = {}
         event["cmdr"] = cmdr
         event["timestamp"] = entry["timestamp"]
         event["filename"] = entry["Filename"][13:]

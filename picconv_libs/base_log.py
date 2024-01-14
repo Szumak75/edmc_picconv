@@ -1,70 +1,73 @@
 # -*- coding: UTF-8 -*-
 """
-Created on 04 mar 2019.
+Created on 04 jan 2023.
 
 @author: szumak@virthost.pl
-
-NoNewAttrs, no_new_attributes - Python Cookbook (2004), A. Martelli,
-                                A. Ravenscroft, D. Ascher
 """
 
-from picconv_libs.mclass import NoNewAttrs
+
+from queue import SimpleQueue, Queue
+from threading import Thread
+from typing import Union, Any
+from jsktoolbox.attribtool import NoDynamicAttributes
+
+from rscan_libs.system import LogClient, LogProcessor
 
 
-class MLogProcessor(NoNewAttrs):
+class BLogProcessor(NoDynamicAttributes):
     """MLogProcessor metaclass.
 
     Container for logger processor methods.
     """
 
-    __logger_queue = None
-    __log_processor_engine = None
-    __thread_logger = None
+    __logger_queue: Union[Queue, SimpleQueue] = None  # type: ignore
+    __log_processor_engine: LogProcessor = None  # type: ignore
+    __thread_logger: Thread = None  # type: ignore
 
     @property
-    def thlog(self):
+    def thlog(self) -> Thread:
         """Give me thread logger handler."""
         return self.__thread_logger
 
     @thlog.setter
-    def thlog(self, value):
+    def thlog(self, value: Thread) -> None:
         self.__thread_logger = value
 
     @property
-    def qlog(self):
+    def qlog(self) -> Union[Queue, SimpleQueue]:
         """Give me access to queue handler."""
         return self.__logger_queue
 
     @qlog.setter
-    def qlog(self, value):
+    def qlog(self, value: Union[Queue, SimpleQueue]) -> None:
         """Setter for logging queue."""
         self.__logger_queue = value
 
     @property
-    def log_processor(self):
+    def log_processor(self) -> LogProcessor:
         """Give me handler for log processor."""
         return self.__log_processor_engine
 
     @log_processor.setter
-    def log_processor(self, value):
+    def log_processor(self, value: LogProcessor) -> None:
         """Setter for log processor instance."""
         self.__log_processor_engine = value
 
 
-class MLogClient(NoNewAttrs):
+class BLogClient:
     """MLogClass metaclass.
 
     Container for logger methods.
     """
 
-    __logger = None
+    __logger: LogClient = None  # type: ignore
 
     @property
-    def logger(self):
+    def logger(self) -> LogClient:
         """Give me logger handler."""
         return self.__logger
 
     @logger.setter
-    def logger(self, arg):
+    def logger(self, arg: LogClient) -> None:
         """Set logger instance."""
         self.__logger = arg

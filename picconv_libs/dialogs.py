@@ -8,22 +8,22 @@ import inspect
 import tkinter as tk
 from queue import Queue, SimpleQueue
 from tkinter import filedialog, ttk
-from typing import Optional
+from typing import Optional, List, Dict, Union, Any
 
 import myNotebook as nb
-from picconv_libs.mclass import NoNewAttrs
-from picconv_libs.mlog import MLogClient
-from picconv_libs.mraise import Raiser
+from jsktoolbox.attribtool import NoDynamicAttributes
+from jsktoolbox.raisetool import Raise
+from picconv_libs.base_log import BLogClient
 from picconv_libs.system import Env, LogClient
 
 
-class ConfigDialog(MLogClient, NoNewAttrs):
+class ConfigDialog(BLogClient, NoDynamicAttributes):
     """Create config dialog for plugin."""
 
-    __vars = None
-    __pic_status = None
+    __vars: Dict[str, Any]
+    __pic_status: nb.Label
 
-    def __init__(self, queue: Queue or SimpleQueue):
+    def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize ConfigDialog class."""
         self.__vars = {
             "pluginname": None,
@@ -34,24 +34,24 @@ class ConfigDialog(MLogClient, NoNewAttrs):
             "picconv_check": None,
             "pictype_check": None,
         }
-        self.__vars["picsrcdir"]: Optional[tk.StringVar] = None
-        self.__vars["picdstdir"]: Optional[tk.StringVar] = None
+        self.__vars["picsrcdir"] = None  #: Optional[tk.StringVar]
+        self.__vars["picdstdir"] = None  #: Optional[tk.StringVar]
         self.__vars["pictype"] = tk.StringVar(value="jpg")
         self.__vars["picconvert"] = tk.IntVar(value=0)
         self.__vars["picmove"] = tk.IntVar(value=1)
-        self.__vars["status"]: Optional[tk.Label] = None
+        self.__vars["status"] = None  #: Optional[tk.Label]
 
         # init log subsystem
-        if isinstance(queue, (Queue, SimpleQueue)):
-            self.logger = LogClient(queue)
-        else:
-            raise Raiser().type_error(
+        if not isinstance(queue, (Queue, SimpleQueue)):
+            raise Raise.error(
+                f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
+                TypeError,
                 self.__class__.__name__,
                 inspect.currentframe(),
-                f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
             )
+        self.logger = LogClient(queue)
 
-    def create_dialog(self, parent: nb.Notebook) -> tk.Frame:
+    def create_dialog(self, parent: nb.Notebook) -> nb.Frame:
         """Create and return config dialog."""
         frame = nb.Frame(parent)
 
@@ -156,7 +156,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
 
         return frame
 
-    def disable_conv_dialogs(self):
+    def disable_conv_dialogs(self) -> None:
         """Disable unused entry."""
         # entry.config(state="disabled")
         self.picconv_check.config(state="disabled")
@@ -164,7 +164,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
             "text"
         ] = "Type conversion unavailable due to missing libraries."
 
-    def button_src_dir(self):
+    def button_src_dir(self) -> None:
         """Run Button callback."""
         self.logger.info = "Src dir button pressed"
         tool = Env()
@@ -179,8 +179,8 @@ class ConfigDialog(MLogClient, NoNewAttrs):
             else:
                 self.pic_status["text"] = ""
         else:
-            entry = self.src_entry.get()
-            tmp = tool.check_dir(entry)
+            entry: str = self.src_entry.get()
+            tmp: str = tool.check_dir(entry)
             if entry != tmp:
                 self.pic_status["text"] = "WARNING: source directory not found"
                 self.src_entry.delete(0, tk.END)
@@ -188,7 +188,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
                 self.pic_status["text"] = ""
         self.logger.info = out
 
-    def button_dst_dir(self):
+    def button_dst_dir(self) -> None:
         """Run Button callback."""
         self.logger.info = "Dst dir button pressed"
         tool = Env()
@@ -205,8 +205,8 @@ class ConfigDialog(MLogClient, NoNewAttrs):
             else:
                 self.pic_status["text"] = ""
         else:
-            entry = self.dst_entry.get()
-            tmp = tool.check_dir(entry)
+            entry: str = self.dst_entry.get()
+            tmp: str = tool.check_dir(entry)
             self.logger.info = f"Entry: {entry}"
             self.logger.info = f"Check: {tmp}"
             if entry != tmp:
@@ -222,7 +222,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["pluginname"]
 
     @pluginname.setter
-    def pluginname(self, arg):
+    def pluginname(self, arg: str) -> None:
         self.__vars["pluginname"] = arg
 
     @property
@@ -231,7 +231,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["version"]
 
     @version.setter
-    def version(self, arg):
+    def version(self, arg: str) -> None:
         self.__vars["version"] = arg
 
     @property
@@ -240,7 +240,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["status"]
 
     @status.setter
-    def status(self, arg):
+    def status(self, arg: tk.Label) -> None:
         self.__vars["status"] = arg
 
     @property
@@ -249,7 +249,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["src_entry"]
 
     @src_entry.setter
-    def src_entry(self, arg):
+    def src_entry(self, arg: nb.Entry) -> None:
         self.__vars["src_entry"] = arg
 
     @property
@@ -258,7 +258,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["dst_entry"]
 
     @dst_entry.setter
-    def dst_entry(self, arg):
+    def dst_entry(self, arg: nb.Entry) -> None:
         self.__vars["dst_entry"] = arg
 
     @property
@@ -268,8 +268,9 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__pic_status
 
     @pic_status.setter
-    def pic_status(self, arg):
-        self.__vars["pic_status"] = arg
+    def pic_status(self, arg: nb.Label) -> None:
+        # self.__vars["pic_status"] = arg
+        self.__pic_status = arg
 
     @property
     def picsrcdir(self) -> Optional[tk.StringVar]:
@@ -277,7 +278,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picsrcdir"]
 
     @picsrcdir.setter
-    def picsrcdir(self, arg):
+    def picsrcdir(self, arg: tk.StringVar) -> None:
         self.__vars["picsrcdir"] = arg
 
     @property
@@ -286,7 +287,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picdstdir"]
 
     @picdstdir.setter
-    def picdstdir(self, arg):
+    def picdstdir(self, arg: tk.StringVar) -> None:
         self.__vars["picdstdir"] = arg
 
     @property
@@ -295,7 +296,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picmove_check"]
 
     @picmove_check.setter
-    def picmove_check(self, arg: nb.Checkbutton):
+    def picmove_check(self, arg: nb.Checkbutton) -> None:
         self.__vars["picmove_check"] = arg
 
     @property
@@ -304,7 +305,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picconv_check"]
 
     @picconv_check.setter
-    def picconv_check(self, arg: nb.Checkbutton):
+    def picconv_check(self, arg: nb.Checkbutton) -> None:
         self.__vars["picconv_check"] = arg
 
     @property
@@ -313,7 +314,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picmove"]
 
     @picmove.setter
-    def picmove(self, arg):
+    def picmove(self, arg: tk.IntVar) -> None:
         self.__vars["picmove"] = arg
 
     @property
@@ -322,7 +323,7 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["picconvert"]
 
     @picconvert.setter
-    def picconvert(self, arg):
+    def picconvert(self, arg: tk.IntVar) -> None:
         self.__vars["picconvert"] = arg
 
     @property
@@ -331,5 +332,5 @@ class ConfigDialog(MLogClient, NoNewAttrs):
         return self.__vars["pictype"]
 
     @pictype.setter
-    def pictype(self, arg):
+    def pictype(self, arg: tk.StringVar) -> None:
         self.__vars["pictype"] = arg

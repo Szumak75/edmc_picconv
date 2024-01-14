@@ -13,15 +13,17 @@ import time
 import tkinter as tk
 from datetime import datetime  # , timedelta
 from queue import Queue, SimpleQueue
+from types import ModuleType
+from typing import List, Dict, Any, Optional, Union
 
-from picconv_libs.mclass import NoNewAttrs
-from picconv_libs.mlog import MLogClient
-from picconv_libs.mmesage import MMessages
-from picconv_libs.mraise import Raiser
+from jsktoolbox.attribtool import NoDynamicAttributes
+from jsktoolbox.raisetool import Raise
+from picconv_libs.base_log import BLogClient
+from picconv_libs.base_message import BMessages
 from picconv_libs.system import Directory, LogClient
 
 
-class PicConverter(MLogClient, MMessages, NoNewAttrs):
+class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
     """PicConverter class for ED Screenshots."""
 
     # {
@@ -34,10 +36,10 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
     # "Body":"Plaa Thua MS-Y b56-0 1 a"
     # }
 
-    __templates = None
-    __vars = None
+    __templates: Dict[str, str]
+    __vars: Dict[str, Any]
 
-    def __init__(self, queue: Queue or SimpleQueue):
+    def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize PicConverter class."""
         self.__vars = {
             "srcdir": None,
@@ -63,21 +65,21 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
 
         # init log subsystem
         if isinstance(queue, (Queue, SimpleQueue)):
-            self.logger = LogClient(queue)
-        else:
-            raise Raiser().type_error(
+            raise Raise.error(
+                f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
+                TypeError,
                 self.__class__.__name__,
                 inspect.currentframe(),
-                f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
             )
+        self.logger = LogClient(queue)
 
     @property
-    def remove(self):
+    def remove(self) -> bool:
         """Give me decision to remove source file after convertion."""
         return self.__vars["remove"]
 
     @remove.setter
-    def remove(self, arg):
+    def remove(self, arg: Union[bool, int, tk.IntVar]) -> None:
         if isinstance(arg, bool):
             self.__vars["remove"] = arg
         elif isinstance(arg, int) and arg == 1:
@@ -88,12 +90,12 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
             self.__vars["remove"] = False
 
     @property
-    def converttype(self):
+    def converttype(self) -> bool:
         """Give me decision to convert source file type."""
         return self.__vars["converttype"]
 
     @converttype.setter
-    def converttype(self, arg):
+    def converttype(self, arg: Union[bool, int, tk.IntVar]) -> None:
         if isinstance(arg, bool):
             self.__vars["converttype"] = arg
         elif isinstance(arg, int) and arg == 1:
@@ -104,35 +106,35 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
             self.__vars["converttype"] = False
 
     @property
-    def srcdir(self):
+    def srcdir(self) -> Directory:
         """Give me source directory with files to convert."""
         return self.__vars["srcdir"]
 
     @srcdir.setter
-    def srcdir(self, arg):
+    def srcdir(self, arg: Directory) -> None:
         self.__vars["srcdir"] = arg
 
     @property
-    def dstdir(self):
+    def dstdir(self) -> Directory:
         """Give me destination directory for converted files."""
         return self.__vars["dstdir"]
 
     @dstdir.setter
-    def dstdir(self, arg):
+    def dstdir(self, arg: Directory) -> None:
         self.__vars["dstdir"] = arg
 
     @property
-    def suffix(self):
+    def suffix(self) -> str:
         """Suffix for pic filename."""
         return self.__vars["suffix"]
 
     @suffix.setter
-    def suffix(self, arg):
+    def suffix(self, arg: str) -> None:
         """Setter for suffix pic filename."""
         self.__vars["suffix"] = arg
 
     @property
-    def templates(self):
+    def templates(self) -> Dict[str, str]:
         """Time templates."""
         return self.__templates
 
@@ -143,17 +145,17 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
         output: 33090101-010143
         """
         # create struct_time
-        str_time = time.strptime(arg, self.templates["logtime"])
+        str_time: time.struct_time = time.strptime(arg, self.templates["logtime"])
 
         # create datetime object
         dt_obj = datetime(*str_time[:6])
 
         # convertion local time to game time
-        dt_obj2 = dt_obj + self.__vars["timedelta"]
+        dt_obj2: datetime = dt_obj + self.__vars["timedelta"]
 
         return dt_obj2.strftime(self.templates["pictime"])
 
-    def has_pillow(self):
+    def has_pillow(self) -> bool:
         """Check if Pillow is present and importable."""
         self.logger.debug = "def has_pillow"
 
@@ -171,7 +173,7 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
             "picconv_libs.PIL39x.Image",  # debian [64] cpython 3.9
         ]:
             try:
-                image = importlib.import_module(imod)
+                image: ModuleType = importlib.import_module(imod)
                 self.__vars["pillib"] = image
                 self.__vars["pillow"] = True
                 self.logger.debug = f"Found: {imod}"
@@ -184,8 +186,8 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
 
     def convert(self, arg: dict) -> bool:
         """Pictures converter."""
-        done = False
-        convert = False
+        done: bool = False
+        convert: bool = False
 
         localsuffix = os.path.splitext(arg["filename"])[1][1:]
         self.logger.debug = "def convert"
@@ -205,13 +207,13 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
             self.logger.error = f"Destination directory is invalid: {self.dstdir.dir}"
             return done
         # check filename
-        src = os.path.join(self.srcdir.dir, arg["filename"])
+        src: str = os.path.join(self.srcdir.dir, arg["filename"])
         if not os.path.exists(src):
             self.logger.error = f"Source file not found: {src}"
             return done
         # generate dst filename
         name = arg["body"]
-        dst = os.path.join(
+        dst: str = os.path.join(
             self.dstdir.dir,
             self.templates["picfile"].format(
                 self.strtime(arg["timestamp"]), name, localsuffix
@@ -258,8 +260,8 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
     def __copy_file(self, src: str, dst: str) -> bool:
         """Copy file to new location."""
         # save file
-        filename1 = os.path.basename(src)
-        filename2 = os.path.basename(dst)
+        filename1: str = os.path.basename(src)
+        filename2: str = os.path.basename(dst)
         try:
             self.logger.debug = f"try to copy file: {filename1} to: {filename2}....."
             shutil.copy(src, dst)
@@ -272,8 +274,8 @@ class PicConverter(MLogClient, MMessages, NoNewAttrs):
 
     def __pil_convert(self, src: str, dst: str) -> bool:
         """Convert file to new type."""
-        filename1 = os.path.basename(src)
-        filename2 = os.path.basename(dst)
+        filename1: str = os.path.basename(src)
+        filename2: str = os.path.basename(dst)
         self.logger.debug = f"SRC: {src}"
         self.logger.debug = f"DST: {dst}"
         try:
