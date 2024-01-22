@@ -20,7 +20,7 @@ from jsktoolbox.raisetool import Raise
 
 import inspect
 import time
-from queue import Queue, SimpleQueue
+from queue import Queue, SimpleQueue, Empty
 from threading import Thread
 from typing import List, Union
 
@@ -42,7 +42,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.shutting_down = False
 
         self.pluginname = "EDPC"
-        version = "0.3.7"
+        version = "0.3.8"
 
         # logging subsystem
         self.qlog = SimpleQueue()
@@ -50,8 +50,9 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.logger = LogClient(self.qlog)
 
         # logging thread
-        self.thlog = Thread(target=self.th_logger, name=f"{self.pluginname} log worker")
-        self.thlog.daemon = True
+        self.thlog = Thread(
+            target=self.th_logger, name=f"{self.pluginname} log worker", daemon=True
+        )
         self.thlog.start()
 
         # config dialog
@@ -61,9 +62,8 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
 
         # worker thread
         self.thworker = Thread(
-            target=self.th_worker, name=f"{self.cdial.pluginname} worker"
+            target=self.th_worker, name=f"{self.cdial.pluginname} worker", daemon=True
         )
-        self.thworker.daemon = True
 
         self.__thqueue = SimpleQueue()
         self.engine = PicConverter(self.qlog)
@@ -81,9 +81,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     @property
     def pluginname(self) -> str:
         """Give me acces to pluginname variable."""
-        try:
-            self.__pluginname
-        except NameError:
+        if self.__pluginname is None:
             self.__pluginname = ""
         return self.__pluginname
 
@@ -94,10 +92,6 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     @property
     def shutting_down(self) -> bool:
         """Give me access to shutting_down flag."""
-        try:
-            self.__shutting_down
-        except NameError:
-            self.__shutting_down = False
         return self.__shutting_down
 
     @shutting_down.setter
@@ -115,7 +109,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         """Def th_logger - thread logs processor."""
         self.logger.info = "Starting logger worker"
         while not self.shutting_down:
-            log = self.qlog.get(True)
+            log = self.qlog.get(block=True)
             if log is None:
                 break
             self.log_processor.send(log)
@@ -161,7 +155,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
             self.logger.info = "Start processing the queue..."
             timestamp = int(time.time()) + timebreake
             try:
-                item = self.qth.get(False)
+                item = self.qth.get(block=False)
                 self.logger.debug = f"queue_processor: item = {item}"
                 if item is None:
                     break
@@ -177,6 +171,8 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
                     self.logger.error = "Image processing error"
                     self.cdial.status["text"] = "Image processing error"
                 del item
+            except Empty:
+                continue
             except Exception as ex:
                 self.logger.debug = f"Worker exception: {ex}"
                 self.cdial.status["text"] = "ERROR: check logs"

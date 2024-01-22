@@ -5,6 +5,7 @@ Created on 18 dec 2022.
 @author: szumak@virthost.pl
 """
 
+import time
 import tkinter as tk
 from typing import Any, Dict, Optional, Tuple
 
@@ -33,7 +34,7 @@ def plugin_start3(plugin_dir: str) -> str:
         if config.get_str("loglevel") is not None
         and LogLevels().has_key(config.get_str("loglevel"))
         else LogLevels().debug
-    ) # type: ignore
+    )  # type: ignore
 
     # config
     edpc_object.cdial.picsrcdir = tk.StringVar(value=config.get_str("picsrcdir"))
@@ -49,16 +50,21 @@ def plugin_start3(plugin_dir: str) -> str:
     )
 
     # init engine
-    if edpc_object.cdial.picsrcdir is not None:
-        edpc_object.engine.srcdir.dir = edpc_object.cdial.picsrcdir.get()
-    if edpc_object.cdial.picdstdir is not None:
-        edpc_object.engine.dstdir.dir = edpc_object.cdial.picdstdir.get()
-    if edpc_object.cdial.picmove is not None:
-        edpc_object.engine.remove = edpc_object.cdial.picmove.get()
-    if edpc_object.cdial.picconvert is not None:
-        edpc_object.engine.converttype = edpc_object.cdial.picconvert.get()
-    if edpc_object.cdial.pictype is not None:
-        edpc_object.engine.suffix = edpc_object.cdial.pictype.get()
+    picsrcdir: Optional[tk.StringVar] = edpc_object.cdial.picsrcdir
+    if picsrcdir:
+        edpc_object.engine.srcdir.dir = picsrcdir.get()
+    picdstdir: Optional[tk.StringVar] = edpc_object.cdial.picdstdir
+    if picdstdir:
+        edpc_object.engine.dstdir.dir = picdstdir.get()
+    picmove: Optional[tk.IntVar] = edpc_object.cdial.picmove
+    if picmove is not None:
+        edpc_object.engine.remove = picmove.get()
+    picconvert: Optional[tk.IntVar] = edpc_object.cdial.picconvert
+    if picconvert:
+        edpc_object.engine.converttype = picconvert.get()
+    pictype: Optional[tk.StringVar] = edpc_object.cdial.pictype
+    if pictype:
+        edpc_object.engine.suffix = pictype.get()
 
     # threading
     edpc_object.thworker.start()
@@ -72,10 +78,11 @@ def plugin_stop() -> None:
     edpc_object.logger.info = f"Stopping plugin {edpc_object.cdial.pluginname}..."
     edpc_object.shutting_down = True
     edpc_object.qth.put(None)
-    edpc_object.thworker.join()
+    time.sleep(3)
+    # edpc_object.thworker.join()
     edpc_object.logger.info = "Done."
     edpc_object.qlog.put(None)
-    edpc_object.thlog.join()
+    # edpc_object.thlog.join()
 
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
@@ -116,30 +123,48 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     is_beta:    If the game is currently a beta version
     """
     edpc_object.logger.info = "config was changed"
-    edpc_object.log_processor.loglevel = LogLevels().get(config.get_str("loglevel"))
+    loglevel = LogLevels().get(config.get_str("loglevel"))
+    if loglevel is not None:
+        edpc_object.log_processor.loglevel = loglevel
 
     # save settings
+    picsrcdir: Optional[tk.StringVar] = edpc_object.cdial.picsrcdir
+    picdstdir: Optional[tk.StringVar] = edpc_object.cdial.picdstdir
+    picmove: Optional[tk.IntVar] = edpc_object.cdial.picmove
+    picconvert: Optional[tk.IntVar] = edpc_object.cdial.picconvert
+    pictype: Optional[tk.StringVar] = edpc_object.cdial.pictype
+
     if Directory().is_directory(edpc_object.cdial.src_entry.get()):
         edpc_object.cdial.picsrcdir = tk.StringVar(
             value=edpc_object.cdial.src_entry.get()
         )
-    config.set("picsrcdir", edpc_object.cdial.picsrcdir.get())
+    if picsrcdir:
+        config.set("picsrcdir", picsrcdir.get())
 
     if Directory().is_directory(edpc_object.cdial.dst_entry.get()):
         edpc_object.cdial.picdstdir = tk.StringVar(
             value=edpc_object.cdial.dst_entry.get()
         )
-    config.set("picdstdir", edpc_object.cdial.picdstdir.get())
-    config.set("picmove", edpc_object.cdial.picmove.get())
-    config.set("picconvert", edpc_object.cdial.picconvert.get())
-    config.set("pictype", edpc_object.cdial.pictype.get())
+    if picdstdir:
+        config.set("picdstdir", picdstdir.get())
+    if picmove:
+        config.set("picmove", picmove.get())
+    if picconvert:
+        config.set("picconvert", picconvert.get())
+    if pictype:
+        config.set("pictype", pictype.get())
 
     # engine update
-    edpc_object.engine.dstdir.dir = edpc_object.cdial.picdstdir.get()
-    edpc_object.engine.srcdir.dir = edpc_object.cdial.picsrcdir.get()
-    edpc_object.engine.remove = edpc_object.cdial.picmove.get()
-    edpc_object.engine.converttype = edpc_object.cdial.picconvert.get()
-    edpc_object.engine.suffix = edpc_object.cdial.pictype.get()
+    if picdstdir:
+        edpc_object.engine.dstdir.dir = picdstdir.get()
+    if picsrcdir:
+        edpc_object.engine.srcdir.dir = picsrcdir.get()
+    if picmove:
+        edpc_object.engine.remove = picmove.get()
+    if picconvert:
+        edpc_object.engine.converttype = picconvert.get()
+    if pictype:
+        edpc_object.engine.suffix = pictype.get()
     edpc_object.logger.info = "update complete"
 
 
