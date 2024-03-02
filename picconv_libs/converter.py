@@ -6,7 +6,7 @@ Created on 30 dec 2022.
 """
 
 import importlib
-import inspect
+from inspect import currentframe
 import os
 import shutil
 import time
@@ -69,7 +69,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
                 TypeError,
                 self.__class__.__name__,
-                inspect.currentframe(),
+                currentframe(),
             )
         self.logger = LogClient(queue)
 

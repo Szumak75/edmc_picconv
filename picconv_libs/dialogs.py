@@ -4,7 +4,8 @@ Created on 02 jan 2023.
 
 @author: szumak@virthost.pl
 """
-import inspect
+
+from inspect import currentframe
 import tkinter as tk
 from queue import Queue, SimpleQueue
 from tkinter import filedialog, ttk
@@ -47,7 +48,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
                 TypeError,
                 self.__class__.__name__,
-                inspect.currentframe(),
+                currentframe(),
             )
         self.logger = LogClient(queue)
 
@@ -160,9 +161,9 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         """Disable unused entry."""
         # entry.config(state="disabled")
         self.picconv_check.config(state="disabled")
-        self.pic_status[
-            "text"
-        ] = "Type conversion unavailable due to missing libraries."
+        self.pic_status["text"] = (
+            "Type conversion unavailable due to missing libraries."
+        )
 
     def button_src_dir(self) -> None:
         """Run Button callback."""

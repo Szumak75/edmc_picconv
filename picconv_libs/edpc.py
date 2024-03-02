@@ -18,7 +18,7 @@ from jsktoolbox.attribtool import NoDynamicAttributes
 from jsktoolbox.raisetool import Raise
 
 
-import inspect
+from inspect import currentframe
 import time
 from queue import Queue, SimpleQueue, Empty
 from threading import Thread
@@ -101,7 +101,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
                 f"Boolean type expected, '{type(value)}' received.",
                 TypeError,
                 self.__class__.__name__,
-                inspect.currentframe(),
+                currentframe(),
             )
         self.__shutting_down = value
 
