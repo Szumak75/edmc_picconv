@@ -245,7 +245,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
 
     @property
     def src_entry(self) -> nb.Entry:
-        """Give me the Entru with source directory."""
+        """Give me the Entry with source directory."""
         return self.__vars["src_entry"]
 
     @src_entry.setter
@@ -254,7 +254,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
 
     @property
     def dst_entry(self) -> nb.Entry:
-        """Give me the Entru with destination directory."""
+        """Give me the Entry with destination directory."""
         return self.__vars["dst_entry"]
 
     @dst_entry.setter
