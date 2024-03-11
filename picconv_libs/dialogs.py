@@ -9,7 +9,7 @@ from inspect import currentframe
 import tkinter as tk
 from queue import Queue, SimpleQueue
 from tkinter import filedialog, ttk
-from typing import Optional, List, Dict, Union, Any
+from typing import Optional, Dict, Union, Any
 
 import myNotebook as nb
 from jsktoolbox.attribtool import NoDynamicAttributes
