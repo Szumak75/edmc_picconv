@@ -14,8 +14,7 @@ import platform
 import subprocess
 import sys
 import tempfile
-from typing import Union, Optional, List, Dict, Any
-from distutils.spawn import find_executable
+from typing import Union, Optional, List, Dict
 from logging.handlers import RotatingFileHandler
 from queue import Queue, SimpleQueue
 from jsktoolbox.attribtool import NoDynamicAttributes
