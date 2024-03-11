@@ -50,10 +50,10 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.logger = LogClient(self.qlog)
 
         # logging thread
-        self.thlog = Thread(
+        self.th_log = Thread(
             target=self.th_logger, name=f"{self.pluginname} log worker", daemon=True
         )
-        self.thlog.start()
+        self.th_log.start()
 
         # config dialog
         self.cdial = ConfigDialog(self.qlog)
