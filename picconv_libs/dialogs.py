@@ -95,7 +95,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         nb.Label(frame, text="ED Screenshot Directory:").grid(
             padx=10, row=rc_src, column=0, columnspan=3, sticky=tk.W
         )
-        self.src_entry = nb.Entry(frame, textvariable=self.picsrcdir)
+        self.src_entry = nb.Entry(frame, textvariable=self.pic_src_dir)
         self.src_entry.grid(
             padx=10, row=rc_src + 1, column=0, columnspan=2, sticky=tk.EW
         )
@@ -107,7 +107,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         nb.Label(frame, text="Screenshot Output Directory:").grid(
             padx=10, row=rc_dst, column=0, columnspan=3, sticky=tk.W
         )
-        self.dst_entry = nb.Entry(frame, textvariable=self.picdstdir)
+        self.dst_entry = nb.Entry(frame, textvariable=self.pic_dst_dir)
         self.dst_entry.grid(
             padx=10, row=rc_dst + 1, column=0, columnspan=2, sticky=tk.EW
         )
@@ -134,7 +134,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         self.picconv_check = nb.Checkbutton(
             frame,
             text="enable type convert",
-            variable=self.picconvert,
+            variable=self.pic_convert,
             onvalue=1,
             offvalue=0,
         )
@@ -274,21 +274,21 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         self.__pic_status = arg
 
     @property
-    def picsrcdir(self) -> Optional[tk.StringVar]:
+    def pic_src_dir(self) -> Optional[tk.StringVar]:
         """Give me string dir."""
         return self.__vars["picsrcdir"]
 
-    @picsrcdir.setter
-    def picsrcdir(self, arg: tk.StringVar) -> None:
+    @pic_src_dir.setter
+    def pic_src_dir(self, arg: tk.StringVar) -> None:
         self.__vars["picsrcdir"] = arg
 
     @property
-    def picdstdir(self) -> Optional[tk.StringVar]:
+    def pic_dst_dir(self) -> Optional[tk.StringVar]:
         """Give me string dir."""
         return self.__vars["picdstdir"]
 
-    @picdstdir.setter
-    def picdstdir(self, arg: tk.StringVar) -> None:
+    @pic_dst_dir.setter
+    def pic_dst_dir(self, arg: tk.StringVar) -> None:
         self.__vars["picdstdir"] = arg
 
     @property
@@ -319,12 +319,12 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         self.__vars["picmove"] = arg
 
     @property
-    def picconvert(self) -> Optional[tk.IntVar]:
+    def pic_convert(self) -> Optional[tk.IntVar]:
         """Give me picconvert value Int."""
         return self.__vars["picconvert"]
 
-    @picconvert.setter
-    def picconvert(self, arg: tk.IntVar) -> None:
+    @pic_convert.setter
+    def pic_convert(self, arg: tk.IntVar) -> None:
         self.__vars["picconvert"] = arg
 
     @property

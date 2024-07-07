@@ -75,7 +75,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
 
     @property
     def remove(self) -> bool:
-        """Give me decision to remove source file after convertion."""
+        """Give me decision to remove source file after conversion."""
         return self.__vars["remove"]
 
     @remove.setter
@@ -138,7 +138,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         """Time templates."""
         return self.__templates
 
-    def strtime(self, arg: str) -> str:
+    def str_time(self, arg: str) -> str:
         """Timestamp from logs in local time convert to game time string.
 
         input: 2023-01-01T03:01:43Z
@@ -150,7 +150,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         # create datetime object
         dt_obj = datetime(*str_time[:6])
 
-        # convertion local time to game time
+        # conversion local time to game time
         dt_obj2: datetime = dt_obj + self.__vars["timedelta"]
 
         return dt_obj2.strftime(self.templates["pictime"])
@@ -189,14 +189,14 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         done: bool = False
         convert: bool = False
 
-        localsuffix = os.path.splitext(arg["filename"])[1][1:]
+        local_suffix = os.path.splitext(arg["filename"])[1][1:]
         self.logger.debug = "def convert"
-        self.logger.debug = f"Local suffix: {localsuffix}"
+        self.logger.debug = f"Local suffix: {local_suffix}"
         self.logger.debug = f"Suffix: {self.__vars['suffix']}"
         self.logger.debug = f"Local pillow flag: {self.__vars['pillow']}"
         self.logger.debug = f"Local convert flag: {self.__vars['converttype']}"
         if self.__vars["pillow"] and self.__vars["converttype"]:
-            localsuffix = self.__vars["suffix"]
+            local_suffix = self.__vars["suffix"]
             convert = True
 
         # check dirs
@@ -216,7 +216,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         dst: str = os.path.join(
             self.dstdir.dir,
             self.templates["picfile"].format(
-                self.strtime(arg["timestamp"]), name, localsuffix
+                self.str_time(arg["timestamp"]), name, local_suffix
             ),
         )
         # if dst file is present, generate new unique name
@@ -226,7 +226,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
             dst = os.path.join(
                 self.dstdir.dir,
                 self.templates["piccountfile"].format(
-                    self.strtime(arg["timestamp"]), name, count, localsuffix
+                    self.str_time(arg["timestamp"]), name, count, local_suffix
                 ),
             )
             if count == 99:

@@ -347,15 +347,15 @@ class LogProcessor(NoDynamicAttributes):
         self.__engine = logging.getLogger(self.__name)
         self.__engine.setLevel(LogLevels().debug)
 
-        hlog = RotatingFileHandler(
+        handler_log = RotatingFileHandler(
             filename=os.path.join(Env().tmpdir, f"{self.__name}.log"),
             maxBytes=100000,
             backupCount=5,
         )
 
-        hlog.setLevel(self.loglevel)
-        hlog.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
-        self.__engine.addHandler(hlog)
+        handler_log.setLevel(self.loglevel)
+        handler_log.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+        self.__engine.addHandler(handler_log)
         self.__engine.info("Logger initialization complete")
 
     def close(self) -> None:

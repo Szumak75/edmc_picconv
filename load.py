@@ -25,7 +25,9 @@ def plugin_start3(plugin_dir: str) -> str:
     plugin_dir:     plugin directory
     return:         local name of the plugin
     """
-    edpc_object.logger.info = f"Starting plugin {edpc_object.cdial.pluginname}..."
+    edpc_object.logger.info = (
+        f"Starting plugin {edpc_object.config_dialog.pluginname}..."
+    )
     edpc_object.logger.debug = f"Plugin dir: {plugin_dir}"
 
     # set loglevel from config
@@ -37,32 +39,36 @@ def plugin_start3(plugin_dir: str) -> str:
     )  # type: ignore
 
     # config
-    edpc_object.cdial.picsrcdir = tk.StringVar(value=config.get_str("picsrcdir"))
-    edpc_object.cdial.picdstdir = tk.StringVar(value=config.get_str("picdstdir"))
-    edpc_object.cdial.picmove = tk.IntVar(
+    edpc_object.config_dialog.pic_src_dir = tk.StringVar(
+        value=config.get_str("picsrcdir")
+    )
+    edpc_object.config_dialog.pic_dst_dir = tk.StringVar(
+        value=config.get_str("picdstdir")
+    )
+    edpc_object.config_dialog.picmove = tk.IntVar(
         value=config.get_int(key="picmove", default=1)
     )
-    edpc_object.cdial.picconvert = tk.IntVar(
+    edpc_object.config_dialog.pic_convert = tk.IntVar(
         value=config.get_int(key="picconvert", default=0)
     )
-    edpc_object.cdial.pictype = tk.StringVar(
+    edpc_object.config_dialog.pictype = tk.StringVar(
         value=config.get_str(key="pictype", default="jpg")
     )
 
     # init engine
-    picsrcdir: Optional[tk.StringVar] = edpc_object.cdial.picsrcdir
+    picsrcdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
     if picsrcdir:
         edpc_object.engine.srcdir.dir = picsrcdir.get()
-    picdstdir: Optional[tk.StringVar] = edpc_object.cdial.picdstdir
+    picdstdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
     if picdstdir:
         edpc_object.engine.dstdir.dir = picdstdir.get()
-    picmove: Optional[tk.IntVar] = edpc_object.cdial.picmove
+    picmove: Optional[tk.IntVar] = edpc_object.config_dialog.picmove
     if picmove is not None:
         edpc_object.engine.remove = picmove.get()
-    picconvert: Optional[tk.IntVar] = edpc_object.cdial.picconvert
+    picconvert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
     if picconvert:
         edpc_object.engine.converttype = picconvert.get()
-    pictype: Optional[tk.StringVar] = edpc_object.cdial.pictype
+    pictype: Optional[tk.StringVar] = edpc_object.config_dialog.pictype
     if pictype:
         edpc_object.engine.suffix = pictype.get()
 
@@ -70,12 +76,14 @@ def plugin_start3(plugin_dir: str) -> str:
     edpc_object.thworker.start()
 
     edpc_object.logger.info = "Done."
-    return edpc_object.cdial.pluginname
+    return edpc_object.config_dialog.pluginname
 
 
 def plugin_stop() -> None:
     """Stop plugin if EDMC is closing."""
-    edpc_object.logger.info = f"Stopping plugin {edpc_object.cdial.pluginname}..."
+    edpc_object.logger.info = (
+        f"Stopping plugin {edpc_object.config_dialog.pluginname}..."
+    )
     edpc_object.shutting_down = True
     edpc_object.qth.put(None)
     time.sleep(3)
@@ -92,10 +100,10 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     cmdr:       The current commander
     is_beta:    If the game is currently a beta version
     """
-    frame = edpc_object.cdial.create_dialog(parent)
+    frame = edpc_object.config_dialog.create_dialog(parent)
     if not edpc_object.engine.has_pillow():
         edpc_object.logger.warning = "Picture type conversion not available."
-        edpc_object.cdial.disable_conv_dialogs()
+        edpc_object.config_dialog.disable_conv_dialogs()
     return frame  # type: ignore
 
 
@@ -106,14 +114,15 @@ def plugin_app(parent: tk.Frame) -> Tuple[tk.Label, tk.Label]:
     """
     # By default widgets inherit the current theme's colors
     label = tk.Label(
-        parent, text=f"{edpc_object.cdial.pluginname} v{edpc_object.cdial.version}:"
+        parent,
+        text=f"{edpc_object.config_dialog.pluginname} v{edpc_object.config_dialog.version}:",
     )
 
     # Override theme's foreground color
     # edpc_object.cdial.status = tk.Label(parent, text="...", foreground="yellow")
     # or not
-    edpc_object.cdial.status = tk.Label(parent, text="")
-    return label, edpc_object.cdial.status  # type: ignore
+    edpc_object.config_dialog.status = tk.Label(parent, text="")
+    return label, edpc_object.config_dialog.status  # type: ignore
 
 
 def prefs_changed(cmdr: str, is_beta: bool) -> None:
@@ -128,22 +137,22 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
         edpc_object.log_processor.loglevel = loglevel
 
     # save settings
-    picsrcdir: Optional[tk.StringVar] = edpc_object.cdial.picsrcdir
-    picdstdir: Optional[tk.StringVar] = edpc_object.cdial.picdstdir
-    picmove: Optional[tk.IntVar] = edpc_object.cdial.picmove
-    picconvert: Optional[tk.IntVar] = edpc_object.cdial.picconvert
-    pictype: Optional[tk.StringVar] = edpc_object.cdial.pictype
+    picsrcdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
+    picdstdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
+    picmove: Optional[tk.IntVar] = edpc_object.config_dialog.picmove
+    picconvert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
+    pictype: Optional[tk.StringVar] = edpc_object.config_dialog.pictype
 
-    if Directory().is_directory(edpc_object.cdial.src_entry.get()):
-        edpc_object.cdial.picsrcdir = tk.StringVar(
-            value=edpc_object.cdial.src_entry.get()
+    if Directory().is_directory(edpc_object.config_dialog.src_entry.get()):
+        edpc_object.config_dialog.pic_src_dir = tk.StringVar(
+            value=edpc_object.config_dialog.src_entry.get()
         )
     if picsrcdir:
         config.set("picsrcdir", picsrcdir.get())
 
-    if Directory().is_directory(edpc_object.cdial.dst_entry.get()):
-        edpc_object.cdial.picdstdir = tk.StringVar(
-            value=edpc_object.cdial.dst_entry.get()
+    if Directory().is_directory(edpc_object.config_dialog.dst_entry.get()):
+        edpc_object.config_dialog.pic_dst_dir = tk.StringVar(
+            value=edpc_object.config_dialog.dst_entry.get()
         )
     if picdstdir:
         config.set("picdstdir", picdstdir.get())

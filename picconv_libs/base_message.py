@@ -3,9 +3,6 @@
 Created on 04 mar 2019.
 
 @author: szumak@virthost.pl
-
-NoNewAttrs, no_new_attributes - Python Cookbook (2004), A. Martelli,
-                                A. Ravenscroft, D. Ascher
 """
 
 from typing import List, Optional, Union

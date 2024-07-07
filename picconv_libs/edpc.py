@@ -31,10 +31,10 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     __pluginname: str = None  # type: ignore
     __shutting_down: bool = False
 
-    __thqueue: Union[Queue, SimpleQueue] = None  # type: ignore
-    __thworker: Thread = None  # type: ignore
+    __th_queue: Union[Queue, SimpleQueue] = None  # type: ignore
+    __th_worker: Thread = None  # type: ignore
 
-    cdial: ConfigDialog = None  # type: ignore
+    config_dialog: ConfigDialog = None  # type: ignore
     engine: PicConverter = None  # type: ignore
 
     def __init__(self) -> None:
@@ -56,31 +56,33 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.th_log.start()
 
         # config dialog
-        self.cdial = ConfigDialog(self.qlog)
-        self.cdial.pluginname = self.pluginname
-        self.cdial.version = version
+        self.config_dialog = ConfigDialog(self.qlog)
+        self.config_dialog.pluginname = self.pluginname
+        self.config_dialog.version = version
 
         # worker thread
         self.thworker = Thread(
-            target=self.th_worker, name=f"{self.cdial.pluginname} worker", daemon=True
+            target=self.th_worker,
+            name=f"{self.config_dialog.pluginname} worker",
+            daemon=True,
         )
 
-        self.__thqueue = SimpleQueue()
+        self.__th_queue = SimpleQueue()
         self.engine = PicConverter(self.qlog)
         self.engine.has_pillow()
 
     @property
     def thworker(self) -> Thread:
         """Give me access to thworker variable."""
-        return self.__thworker
+        return self.__th_worker
 
     @thworker.setter
     def thworker(self, value: Thread) -> None:
-        self.__thworker = value
+        self.__th_worker = value
 
     @property
     def pluginname(self) -> str:
-        """Give me acces to pluginname variable."""
+        """Give me access to pluginname variable."""
         if self.__pluginname is None:
             self.__pluginname = ""
         return self.__pluginname
@@ -129,8 +131,8 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
             # processing queue
             timestamp: int = self.queue_processor(timestamp)
 
-            if timestamp < int(time.time()) and self.cdial.status is not None:
-                self.cdial.status["text"] = idle[idle_idx]
+            if timestamp < int(time.time()) and self.config_dialog.status is not None:
+                self.config_dialog.status["text"] = idle[idle_idx]
 
             if self.shutting_down:
                 break
@@ -142,18 +144,18 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     @property
     def qth(self) -> Union[Queue, SimpleQueue]:
         """Give me th queue."""
-        return self.__thqueue
+        return self.__th_queue
 
     def queue_processor(self, timestamp: int) -> int:
         """Convert queue items."""
-        timebreake: int = 20
+        time_break: int = 20
         test: bool = False
 
         # processing queue
         while not self.qth.empty() and not self.shutting_down:
             test = True
             self.logger.info = "Start processing the queue..."
-            timestamp = int(time.time()) + timebreake
+            timestamp = int(time.time()) + time_break
             try:
                 item = self.qth.get(block=False)
                 self.logger.debug = f"queue_processor: item = {item}"
@@ -164,18 +166,21 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
                     if self.engine.has_messages():
                         for msg in self.engine.messages:
                             self.logger.info = msg
-                            self.cdial.status["text"] = msg
+                            if self.config_dialog and self.config_dialog.status:
+                                self.config_dialog.status["text"] = msg
                         self.engine.messages = None
                 else:
                     # processing error
                     self.logger.error = "Image processing error"
-                    self.cdial.status["text"] = "Image processing error"
+                    if self.config_dialog and self.config_dialog.status:
+                        self.config_dialog.status["text"] = "Image processing error"
                 del item
             except Empty:
                 continue
             except Exception as ex:
                 self.logger.debug = f"Worker exception: {ex}"
-                self.cdial.status["text"] = "ERROR: check logs"
+                if self.config_dialog and self.config_dialog.status:
+                    self.config_dialog.status["text"] = "ERROR: check logs"
                 continue
             self.logger.info = "Done."
         if test:
