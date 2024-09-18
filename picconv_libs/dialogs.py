@@ -95,7 +95,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         nb.Label(frame, text="ED Screenshot Directory:").grid(
             padx=10, row=rc_src, column=0, columnspan=3, sticky=tk.W
         )
-        self.src_entry = nb.Entry(frame, textvariable=self.pic_src_dir)
+        self.src_entry = nb.EntryMenu(frame, textvariable=self.pic_src_dir)
         self.src_entry.grid(
             padx=10, row=rc_src + 1, column=0, columnspan=2, sticky=tk.EW
         )
@@ -107,7 +107,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         nb.Label(frame, text="Screenshot Output Directory:").grid(
             padx=10, row=rc_dst, column=0, columnspan=3, sticky=tk.W
         )
-        self.dst_entry = nb.Entry(frame, textvariable=self.pic_dst_dir)
+        self.dst_entry = nb.EntryMenu(frame, textvariable=self.pic_dst_dir)
         self.dst_entry.grid(
             padx=10, row=rc_dst + 1, column=0, columnspan=2, sticky=tk.EW
         )
@@ -245,21 +245,21 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         self.__vars["status"] = arg
 
     @property
-    def src_entry(self) -> nb.Entry:
+    def src_entry(self) -> nb.EntryMenu:
         """Give me the Entry with source directory."""
         return self.__vars["src_entry"]
 
     @src_entry.setter
-    def src_entry(self, arg: nb.Entry) -> None:
+    def src_entry(self, arg: nb.EntryMenu) -> None:
         self.__vars["src_entry"] = arg
 
     @property
-    def dst_entry(self) -> nb.Entry:
+    def dst_entry(self) -> nb.EntryMenu:
         """Give me the Entry with destination directory."""
         return self.__vars["dst_entry"]
 
     @dst_entry.setter
-    def dst_entry(self, arg: nb.Entry) -> None:
+    def dst_entry(self, arg: nb.EntryMenu) -> None:
         self.__vars["dst_entry"] = arg
 
     @property

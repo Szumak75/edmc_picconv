@@ -42,7 +42,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.shutting_down = False
 
         self.pluginname = "EDPC"
-        version = "0.3.8"
+        version = "0.3.9"
 
         # logging subsystem
         self.qlog = SimpleQueue()
@@ -121,6 +121,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.logger.info = "Starting worker..."
         idle: List[str] = [".", "..", "...", "...."]
         idle_idx = 0
+
         timestamp = int(time.time())
 
         while not self.shutting_down:
@@ -130,9 +131,14 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
 
             # processing queue
             timestamp: int = self.queue_processor(timestamp)
-
-            if timestamp < int(time.time()) and self.config_dialog.status is not None:
-                self.config_dialog.status["text"] = idle[idle_idx]
+            try:
+                if (
+                    timestamp < int(time.time())
+                    and self.config_dialog.status is not None
+                ):
+                    self.config_dialog.status["text"] = idle[idle_idx]
+            except:
+                pass
 
             if self.shutting_down:
                 break
