@@ -19,174 +19,9 @@ from logging.handlers import RotatingFileHandler
 from queue import Queue, SimpleQueue
 from edpc.jsktoolbox.attribtool import NoDynamicAttributes
 from edpc.jsktoolbox.raisetool import Raise
-# from edpc.jsktoolbox.systemtool import Env
 
-class Clip(NoDynamicAttributes):
-    """System clipboard tool."""
-
-    __copy = None
-    __paste = None
-
-    def __init__(self) -> None:
-        """Create instance of class."""
-        set_cb = None
-        get_cb = None
-        if os.name == "nt" or platform.system() == "Windows":
-            import ctypes
-
-            get_cb = self.__win_get_clipboard
-            set_cb = self.__win_set_clipboard
-        elif os.name == "mac" or platform.system() == "Darwin":
-            get_cb = self.__mac_get_clipboard
-            set_cb = self.__mac_set_clipboard
-        elif os.name == "posix" or platform.system() == "Linux":
-            xclipExists = os.system("which xclip > /dev/null") == 0
-            if xclipExists:
-                get_cb = self.__xclip_get_clipboard
-                set_cb = self.__xclip_set_clipboard
-            else:
-                xselExists = os.system("which xsel > /dev/null") == 0
-                if xselExists:
-                    get_cb = self.__xsel_get_clipboard
-                    set_cb = self.__xsel_set_clipboard
-                try:
-                    import gtk
-
-                    get_cb = self.__gtk_get_clipboard
-                    set_cb = self.__gtk_set_clipboard
-                except Exception:
-                    try:
-                        import PyQt4.QtCore
-                        import PyQt4.QtGui
-
-                        app = PyQt4.QApplication([])
-                        cb = PyQt4.QtGui.QApplication.clipboard()
-                        get_cb = self.__qt_get_clipboard
-                        set_cb = self.__qt_set_clipboard
-                    except:
-                        print(
-                            Raise.message(
-                                "Pyperclip requires the gtk or PyQt4 module installed, or the xclip command.",
-                                self.__class__.__name__,
-                                currentframe(),
-                            )
-                        )
-        self.__copy = set_cb
-        self.__paste = get_cb
-
-    @property
-    def is_tool(self):
-        """Return True if the tool is available."""
-        return self.__copy is not None and self.__paste is not None
-
-    @property
-    def copy(self):
-        """Return copy handler."""
-        return self.__copy
-
-    @property
-    def paste(self):
-        """Return paste handler."""
-        return self.__paste
-
-    def __win_get_clipboard(self):
-        """Get windows clipboard data."""
-        ctypes.windll.user32.OpenClipboard(0)
-        pcontents = ctypes.windll.user32.GetClipboardData(1)  # 1 is CF_TEXT
-        data = ctypes.c_char_p(pcontents).value
-        # ctypes.windll.kernel32.GlobalUnlock(pcontents)
-        ctypes.windll.user32.CloseClipboard()
-        return data
-
-    def __win_set_clipboard(self, text) -> None:
-        """Set windows clipboard data."""
-        text = str(text)
-        GMEM_DDESHARE = 0x2000
-        ctypes.windll.user32.OpenClipboard(0)
-        ctypes.windll.user32.EmptyClipboard()
-        try:
-            # works on Python 2 (bytes() only takes one argument)
-            hCd = ctypes.windll.kernel32.GlobalAlloc(
-                GMEM_DDESHARE, len(bytes(text)) + 1
-            )
-        except TypeError:
-            # works on Python 3 (bytes() requires an encoding)
-            hCd = ctypes.windll.kernel32.GlobalAlloc(
-                GMEM_DDESHARE, len(bytes(text, "ascii")) + 1
-            )
-        pchData = ctypes.windll.kernel32.GlobalLock(hCd)
-        try:
-            # works on Python 2 (bytes() only takes one argument)
-            ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text))
-        except TypeError:
-            # works on Python 3 (bytes() requires an encoding)
-            ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text, "ascii"))
-        ctypes.windll.kernel32.GlobalUnlock(hCd)
-        ctypes.windll.user32.SetClipboardData(1, hCd)
-        ctypes.windll.user32.CloseClipboard()
-
-    def __mac_set_clipboard(self, text) -> None:
-        """Set MacOS clipboard data."""
-        text = str(text)
-        outf = os.popen("pbcopy", "w")
-        outf.write(text)
-        outf.close()
-
-    def __mac_get_clipboard(self) -> str:
-        """Get MacOS clipboard data."""
-        outf = os.popen("pbpaste", "r")
-        content = outf.read()
-        outf.close()
-        return content
-
-    def __gtk_get_clipboard(self):
-        """Get GTK clipboard data."""
-        return gtk.Clipboard().wait_for_text()
-
-    def __gtk_set_clipboard(self, text) -> None:
-        """Set GTK clipboard data."""
-        global cb
-        text = str(text)
-        cb = gtk.Clipboard()
-        cb.set_text(text)
-        cb.store()
-
-    def __qt_get_clipboard(self) -> str:
-        """Get QT clipboard data."""
-        return str(cb.text())
-
-    def __qt_set_clipboard(self, text) -> None:
-        """Set QT clipboard data."""
-        text = str(text)
-        cb.setText(text)
-
-    def __xclip_set_clipboard(self, text) -> None:
-        """Set xclip clipboard data."""
-        text = str(text)
-        outf = os.popen("xclip -selection c", "w")
-        outf.write(text)
-        outf.close()
-
-    def __xclip_get_clipboard(self) -> str:
-        """Get xclip clipboard data."""
-        outf = os.popen("xclip -selection c -o", "r")
-        content = outf.read()
-        outf.close()
-        return content
-
-    def __xsel_set_clipboard(self, text) -> None:
-        """Set xsel clipboard data."""
-        text = str(text)
-        outf = os.popen("xsel -i", "w")
-        outf.write(text)
-        outf.close()
-
-    def __xsel_get_clipboard(self) -> str:
-        """Get xsel clipboard data."""
-        outf = os.popen("xsel -o", "r")
-        content = outf.read()
-        outf.close()
-        return content
+from edpc.jsktoolbox.systemtool import Env
+from edpc.jsktoolbox.tktool.tools import ClipBoard as Clip
 
 
 class Directory(NoDynamicAttributes):
@@ -218,64 +53,18 @@ class Directory(NoDynamicAttributes):
             self.__dir = arg
 
 
-class Env(NoDynamicAttributes):
+class EnvLocal(Env):
     """Environmental class."""
-
-    __tmp: str = None  # type: ignore
-    __home: str = None  # type: ignore
 
     def __init__(self) -> None:
         """Initialize Env class."""
-        home: Optional[str] = os.getenv("HOME")
-        if home is None:
-            home = os.getenv("HOMEPATH")
-            if home is not None:
-                home = f"{os.getenv('HOMEDRIVE')}{home}"
-        self.__home = home if home else ""
-
-        tmp: Optional[str] = os.getenv("TMP")
-        if tmp is None:
-            tmp = os.getenv("TEMP")
-            if tmp is None:
-                tmp = tempfile.gettempdir()
-        self.__tmp = tmp
+        super().__init__()
 
     def check_dir(self, directory: str) -> str:
         """Check if dir exists, return dir or else HOME."""
         if not Directory().is_directory(directory):
             return self.home
         return directory
-
-    def os_arch(self) -> str:
-        """Return multiplatform os architecture."""
-        os_arch = "32-bit"
-        if os.name == "nt":
-            output = subprocess.check_output(
-                ["wmic", "os", "get", "OSArchitecture"]
-            ).decode()
-            os_arch = output.split()[1]
-        else:
-            output: str = subprocess.check_output(["uname", "-m"]).decode()
-            if "x86_64" in output:
-                os_arch = "64-bit"
-            else:
-                os_arch = "32-bit"
-        return os_arch
-
-    @property
-    def is_64bits(self) -> bool:
-        """Check 64bits platform."""
-        return sys.maxsize > 2**32
-
-    @property
-    def home(self) -> str:
-        """Property that returns home directory string."""
-        return self.__home
-
-    @property
-    def tmpdir(self) -> str:
-        """Property that returns tmp directory string."""
-        return self.__tmp
 
 
 class Log(NoDynamicAttributes):
@@ -348,7 +137,7 @@ class LogProcessor(NoDynamicAttributes):
         self.__engine.setLevel(LogLevels().debug)
 
         handler_log = RotatingFileHandler(
-            filename=os.path.join(Env().tmpdir, f"{self.__name}.log"),
+            filename=os.path.join(EnvLocal().tmpdir, f"{self.__name}.log"),
             maxBytes=100000,
             backupCount=5,
         )

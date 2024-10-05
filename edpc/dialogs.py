@@ -15,7 +15,7 @@ import myNotebook as nb
 from edpc.jsktoolbox.attribtool import NoDynamicAttributes
 from edpc.jsktoolbox.raisetool import Raise
 from edpc.base_log import BLogClient
-from edpc.system import Env, LogClient
+from edpc.system import EnvLocal, LogClient
 
 
 class ConfigDialog(BLogClient, NoDynamicAttributes):
@@ -168,7 +168,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
     def button_src_dir(self) -> None:
         """Run Button callback."""
         self.logger.info = "Src dir button pressed"
-        tool = Env()
+        tool = EnvLocal()
         out = filedialog.askdirectory(initialdir=tool.check_dir(self.src_entry.get()))
         if isinstance(out, str) and len(out) > 0:
             self.src_entry.delete(0, tk.END)
@@ -192,7 +192,7 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
     def button_dst_dir(self) -> None:
         """Run Button callback."""
         self.logger.info = "Dst dir button pressed"
-        tool = Env()
+        tool = EnvLocal()
         out = filedialog.askdirectory(initialdir=tool.check_dir(self.dst_entry.get()))
         if isinstance(out, str) and len(out) > 0:
             self.dst_entry.delete(0, tk.END)
