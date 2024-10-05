@@ -9,7 +9,7 @@
 
 import tkinter as tk
 
-from jsktoolbox.attribtool import ReadOnlyClass
+from ..attribtool import ReadOnlyClass
 
 
 class Pack(object, metaclass=ReadOnlyClass):

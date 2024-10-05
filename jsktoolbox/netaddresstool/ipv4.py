@@ -10,19 +10,19 @@ import socket
 import struct
 from copy import deepcopy
 from inspect import currentframe
-from typing import TypeVar, Union, List, Optional
+from typing import TypeVar, Union, List
 
-from jsktoolbox.attribtool import NoDynamicAttributes
-from jsktoolbox.raisetool import Raise
+from ..attribtool import NoDynamicAttributes
+from ..raisetool import Raise
 from .libs.octets import Octet
-from jsktoolbox.libs.interfaces.comparators import IComparators
-from jsktoolbox.libs.base_data import BClasses
+from ..libs.interfaces.comparators import IComparators
+from ..basetool.classes import BClasses
 
 TAddress = TypeVar("TAddress", bound="Address")
 
 
 class Address(IComparators, BClasses, NoDynamicAttributes):
-    """Address class for representing IPv4 adresses.
+    """Address class for representing IPv4 addresses.
 
     Constructor arguments:
     addr: Union[str, int, List[Octets]] -- IPv4 address representation as string, integer or list of four Octets
@@ -34,7 +34,7 @@ class Address(IComparators, BClasses, NoDynamicAttributes):
     octets: Union[str, int, List] -- Set IPv4 address from string, integer or list of octets.
     """
 
-    __varint: int = 0
+    __var_int: int = 0
 
     def __init__(
         self, addr: Union[str, int, Union[List[str], List[int], List[Octet]]]
@@ -67,14 +67,14 @@ class Address(IComparators, BClasses, NoDynamicAttributes):
         return int(self) != int(arg)
 
     @staticmethod
-    def __int_to_ip(ipint: int) -> str:
+    def __int_to_ip(ip_int: int) -> str:
         """Convert ip int representation to ipv4 str."""
-        return socket.inet_ntoa(struct.pack("!L", ipint))
+        return socket.inet_ntoa(struct.pack("!L", ip_int))
 
     @staticmethod
-    def __ip_to_int(ipstr: str) -> int:
+    def __ip_to_int(ip_str: str) -> int:
         """Convert ipv4 str representation to ip int."""
-        return struct.unpack("!L", socket.inet_aton(ipstr))[0]
+        return struct.unpack("!L", socket.inet_aton(ip_str))[0]
 
     def __set_octets_from_list(
         self, value: Union[List[str], List[int], List[Octet]]
@@ -94,13 +94,13 @@ class Address(IComparators, BClasses, NoDynamicAttributes):
                 currentframe(),
             )
 
-        self.__varint = Address.__ip_to_int(
+        self.__var_int = Address.__ip_to_int(
             f"{Octet(value[0])}.{Octet(value[1])}.{Octet(value[2])}.{Octet(value[3])}"
         )
 
     def __set_octets_from_int(self, value: int) -> None:
         if value in range(0, 4294967296):
-            self.__varint = value
+            self.__var_int = value
         else:
             raise Raise.error(
                 f"IP-int out of range (0-4294967295), received: {value}",
@@ -114,13 +114,13 @@ class Address(IComparators, BClasses, NoDynamicAttributes):
 
     def __int__(self) -> int:
         """Return ipv4 representation as integer."""
-        return self.__varint
+        return self.__var_int
 
     def __str__(self) -> str:
         """Return string representation of address."""
-        return Address.__int_to_ip(self.__varint)
+        return Address.__int_to_ip(self.__var_int)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return representation of object."""
         return f"{self._c_name}('{str(self)}')"
 
@@ -306,7 +306,7 @@ class Network(BClasses, NoDynamicAttributes):
     Public property:
     address: Address -- Return IPv4 address set in the constructor.
     broadcast: Address -- Return broadcast address.
-    count: int -- Return count hosts adresses in network range.
+    count: int -- Return count hosts addresses in network range.
     hosts: List[Address] -- Return hosts address list.
     network: Address -- Return network address.
     mask: Netmask -- Return netmask.
@@ -386,7 +386,7 @@ class Network(BClasses, NoDynamicAttributes):
 
     @property
     def count(self) -> int:
-        """Return count hosts adresses in network range."""
+        """Return count hosts addresses in network range."""
         net = int(self.network)
         broadcast = int(self.broadcast)
         return broadcast - net - 1 if broadcast - net > 2 else 0
@@ -474,13 +474,13 @@ class SubNetwork(BClasses, NoDynamicAttributes):
     def subnets(self) -> List[Network]:
         """Return subnets list."""
         tmp: List[Network] = []
-        nstart = int(self.__network.network)
-        nend = int(self.__network.broadcast)
-        start: int = nstart
+        net_start = int(self.__network.network)
+        net_end = int(self.__network.broadcast)
+        start: int = net_start
         while True:
             subnet = Network([Address(start), self.__mask])
             tmp.append(subnet)
-            if int(subnet.broadcast) >= nend:
+            if int(subnet.broadcast) >= net_end:
                 break
             start = int(subnet.broadcast) + 1
         return tmp

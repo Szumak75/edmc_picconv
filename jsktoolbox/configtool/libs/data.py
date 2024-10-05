@@ -7,12 +7,13 @@
 """
 
 from inspect import currentframe
-from typing import List, Tuple, Optional, Union, Any, TypeVar, Generic
+from typing import List, Tuple, Optional, Union, Any, TypeVar
 from abc import ABC, abstractmethod
 from copy import copy
-from jsktoolbox.attribtool import NoDynamicAttributes, ReadOnlyClass
-from jsktoolbox.raisetool import Raise
-from jsktoolbox.libs.base_data import BData
+
+from ...attribtool import NoDynamicAttributes, ReadOnlyClass
+from ...raisetool import Raise
+from ...basetool.data import BData
 
 TVariableModel = TypeVar("TVariableModel", bound="VariableModel")
 
@@ -23,13 +24,13 @@ class _Keys(object, metaclass=ReadOnlyClass):
     For internal purpose only.
     """
 
-    DATA = "__data__"
-    DESC = "__desc__"
-    DESCRIPTION = "__description__"
-    MAIN = "__main__"
-    NAME = "__name__"
-    VALUE = "__value__"
-    VARIABLES = "__variables__"
+    DATA: str = "__data__"
+    DESC: str = "__desc__"
+    DESCRIPTION: str = "__description__"
+    MAIN: str = "__main__"
+    NAME: str = "__name__"
+    VALUE: str = "__value__"
+    VARIABLES: str = "__variables__"
 
 
 class IModel(ABC):
@@ -87,7 +88,7 @@ class VariableModel(BData, IModel, NoDynamicAttributes):
         return f"{self._c_name}({tmp})"
 
     def __str__(self) -> str:
-        """Return formated string."""
+        """Return formatted string."""
         tmp: str = ""
         tmp += f"{self.name} = " if self.name is not None else ""
         if isinstance(self.value, (int, float, bool)):
@@ -106,13 +107,13 @@ class VariableModel(BData, IModel, NoDynamicAttributes):
 
     @property
     def desc(self) -> Optional[str]:
-        """Get descrption property."""
-        return self._data[_Keys.DESC]
+        """Get description property."""
+        return self._get_data(key=_Keys.DESC, set_default_type=Optional[str])
 
     @desc.setter
     def desc(self, desc: Optional[str]) -> None:
         """Set description property."""
-        self._data[_Keys.DESC] = desc
+        self._set_data(key=_Keys.DESC, value=desc, set_default_type=Optional[str])
 
     @property
     def dump(self) -> TVariableModel:
@@ -122,14 +123,17 @@ class VariableModel(BData, IModel, NoDynamicAttributes):
     @property
     def name(self) -> Optional[str]:
         """Get name property."""
-        return self._data[_Keys.NAME]
+        return self._get_data(key=_Keys.NAME, set_default_type=Optional[str])
 
     @name.setter
     def name(self, name: Optional[str]) -> None:
         """Set name property."""
         if name is None:
-            return
-        self._data[_Keys.NAME] = name.strip()
+            self._set_data(key=_Keys.NAME, value=None, set_default_type=Optional[str])
+        else:
+            self._set_data(
+                key=_Keys.NAME, value=name.strip(), set_default_type=Optional[str]
+            )
 
     def parser(self, value: str) -> None:
         """Parser method."""
@@ -141,12 +145,19 @@ class VariableModel(BData, IModel, NoDynamicAttributes):
     @property
     def value(self) -> Optional[Union[str, int, float, bool, List]]:
         """Get value property."""
-        return self._data[_Keys.VALUE]
+        return self._get_data(
+            key=_Keys.VALUE,
+            set_default_type=Optional[Union[str, int, float, bool, List]],
+        )
 
     @value.setter
     def value(self, value: Optional[Union[str, int, float, bool, List]]) -> None:
         """Set value property."""
-        self._data[_Keys.VALUE] = value
+        self._set_data(
+            key=_Keys.VALUE,
+            value=value,
+            set_default_type=Optional[Union[str, int, float, bool, List]],
+        )
 
 
 class SectionModel(BData, IModel, NoDynamicAttributes):
@@ -163,7 +174,7 @@ class SectionModel(BData, IModel, NoDynamicAttributes):
         return f"{self._c_name}(name='{self.name}')"
 
     def __str__(self) -> str:
-        """Return formated string."""
+        """Return formatted string."""
         return f"[{self.name}]"
 
     @property
@@ -249,16 +260,14 @@ class DataProcessor(BData, NoDynamicAttributes):
     @property
     def main_section(self) -> Optional[str]:
         """Return main section name."""
-        if _Keys.MAIN not in self._data:
-            self._data[_Keys.MAIN] = None
-        return self._data[_Keys.MAIN]
+        return self._get_data(key=_Keys.MAIN, set_default_type=Optional[str])
 
     @main_section.setter
     def main_section(self, name: str) -> None:
         """Set main section name."""
         if not isinstance(name, str):
             name = str(name)
-        self._data[_Keys.MAIN] = name
+        self._set_data(key=_Keys.MAIN, value=name, set_default_type=Optional[str])
         self.add_section(name)
 
     @property
@@ -360,7 +369,7 @@ class DataProcessor(BData, NoDynamicAttributes):
 
     @property
     def dump(self) -> str:
-        """Return formated configuration data string."""
+        """Return formatted configuration data string."""
         out: str = ""
 
         # first section is a main section

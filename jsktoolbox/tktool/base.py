@@ -7,11 +7,11 @@
   Purpose: Base classes for tkinter.
 """
 
-from jsktoolbox.attribtool import NoDynamicAttributes, ReadOnlyClass
+from ..attribtool import NoDynamicAttributes
 
 
 class TkBase(NoDynamicAttributes):
-    """Base class for classess derived from Tk."""
+    """Base class for classes derived from Tk."""
 
     _name = None
     _tkloaded = None

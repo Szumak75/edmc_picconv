@@ -14,17 +14,17 @@ from copy import deepcopy
 from inspect import currentframe
 from typing import TypeVar, Union, List
 
-from jsktoolbox.attribtool import NoDynamicAttributes
-from jsktoolbox.raisetool import Raise
+from ..attribtool import NoDynamicAttributes
+from ..raisetool import Raise
 from .libs.words import Word16
-from jsktoolbox.libs.interfaces.comparators import IComparators
-from jsktoolbox.libs.base_data import BClasses
+from ..libs.interfaces.comparators import IComparators
+from ..basetool.classes import BClasses
 
 TAddress6 = TypeVar("TAddress6", bound="Address6")
 
 
 class Address6(IComparators, BClasses, NoDynamicAttributes):
-    """Address6 class for representing IPv6 adresses.
+    """Address6 class for representing IPv6 addresses.
 
     Constructor arguments:
     addr: Union[str, int, List[Word16]] -- IPv6 address representation as string, integer or list of eight Word16
@@ -36,7 +36,7 @@ class Address6(IComparators, BClasses, NoDynamicAttributes):
     words: Union[str, int, List] -- Set IPv6 address from string, integer or list of Word16.
     """
 
-    __varint: int = 0
+    __var_int: int = 0
 
     def __init__(
         self, addr: Union[str, int, Union[List[int], List[str], List[Word16]]]
@@ -149,7 +149,7 @@ class Address6(IComparators, BClasses, NoDynamicAttributes):
     def __set_words_from_int(self, value: int) -> None:
         # if value >= 0 and value <= 340282366920938463463374607431768211455:
         if value in range(0, 340282366920938463463374607431768211456):
-            self.__varint = value
+            self.__var_int = value
         else:
             raise Raise.error(
                 f"IP-int out of range (0-340282366920938463463374607431768211455), received: {value}",
@@ -160,7 +160,7 @@ class Address6(IComparators, BClasses, NoDynamicAttributes):
 
     def __set_words_from_str(self, value: str) -> None:
         if Address6.__is_valid_ipv6(value):
-            self.__varint = Address6.__ip_to_int(value)
+            self.__var_int = Address6.__ip_to_int(value)
         else:
             raise Raise.error(
                 f"IPv6 address is invalid: {value}",
@@ -171,11 +171,11 @@ class Address6(IComparators, BClasses, NoDynamicAttributes):
 
     def __int__(self) -> int:
         """Return ipv4 representation as integer."""
-        return self.__varint
+        return self.__var_int
 
     def __str__(self) -> str:
         """Return string representation of address."""
-        return Address6.__int_to_ip(self.__varint)
+        return Address6.__int_to_ip(self.__var_int)
 
     def __repr__(self) -> str:
         """Return representation of object."""
@@ -333,7 +333,7 @@ class Network6(BClasses, NoDynamicAttributes):
 
     Public property:
     address: Address6 -- Return IPv6 address set in the constructor.
-    count: int -- Return count hosts adresses in network range.
+    count: int -- Return count hosts addresses in network range.
     hosts: List[Address6] -- Return hosts address list.
     network: Address6 -- Return network address.
     prefix: Prefix6 -- Return prefix.
@@ -488,13 +488,13 @@ class SubNetwork6(BClasses, NoDynamicAttributes):
     def subnets(self) -> List[Network6]:
         """Return subnets list."""
         tmp: List[Network6] = []
-        nstart = int(self.__network.min)
-        nend = int(self.__network.max)
-        start: int = nstart
+        net_start = int(self.__network.min)
+        net_end = int(self.__network.max)
+        start: int = net_start
         while True:
             subnet = Network6([Address6(start), self.__prefix])
             tmp.append(subnet)
-            if int(subnet.max) >= nend:
+            if int(subnet.max) >= net_end:
                 break
             start = int(subnet.max) + 1
         return tmp

@@ -11,8 +11,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Union
 from inspect import currentframe
 
-from jsktoolbox.attribtool import NoNewAttributes
-from jsktoolbox.raisetool import Raise
+from .attribtool import NoNewAttributes
+from .raisetool import Raise
 
 
 class DateTime(NoNewAttributes):
@@ -22,7 +22,7 @@ class DateTime(NoNewAttributes):
     def now(cls, tz: Optional[timezone] = None) -> datetime:
         """Return datetime.datetime.now() object.
 
-        Argument:
+        ### Arguments:
         tz [datetime.timezone] - datetime.timezone.utc for UTC, default None for current set timezone.
         """
         return datetime.now(tz=tz)
@@ -61,7 +61,7 @@ class DateTime(NoNewAttributes):
     ) -> timedelta:
         """Generate date/time timedelta with elapsed time, from given timestamp to now.
 
-        WARNING:
+        ### WARNING:
         Returns the timedelta accurate to the second.
         """
         if not isinstance(seconds, (int, float)):
@@ -76,13 +76,62 @@ class DateTime(NoNewAttributes):
 
 
 class Timestamp(NoNewAttributes):
-    """Timestamp class for geting current timestamp."""
+    """Timestamp class for getting current timestamp."""
 
     @classmethod
-    @property
     def now(cls) -> int:
-        """Return timestamp int."""
+        """Return current timestamp as int."""
         return int(time())
+
+    @classmethod
+    def now_int(cls) -> int:
+        """Return current timestamp as int."""
+        return int(time())
+
+    @classmethod
+    def now_float(cls) -> float:
+        """Return current timestamp as float."""
+        return float(time())
+
+    @classmethod
+    def from_string(cls, date_string: str, format: str) -> int:
+        """Returns timestamp from string in strptime format.
+
+        ### Arguments
+        * date_string [str] - date/time string to parse,
+        * format [str] - string with date/time format, for example: '%Y-%m-%d'
+
+        ### Returns
+        timestamp as int
+        """
+        try:
+            element: datetime = datetime.strptime(date_string, format)
+        except ValueError as ex:
+            raise Raise.error(f"{ex}", ValueError, cls.__qualname__, currentframe())
+        except Exception as ex:
+            raise ex
+
+        return int(datetime.timestamp(element))
+
+    @classmethod
+    def from_string_float(cls, date_string: str, format: str) -> float:
+        """Returns timestamp from string in strptime format.
+
+        ### Arguments
+        * date_string [str] - date/time string to parse,
+        * format [str] - string with date/time format, for example: '%Y-%m-%d'
+
+        ### Returns
+        timestamp as float
+        """
+        try:
+            element: datetime = datetime.strptime(date_string, format)
+        except ValueError as ex:
+            raise Raise.error(f"{ex}", ValueError, cls.__qualname__, currentframe())
+        except Exception as ex:
+            raise ex
+
+        return float(datetime.timestamp(element))
 
 
 # #[EOF]#######################################################################

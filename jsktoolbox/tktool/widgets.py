@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import Toplevel, ttk
 from typing import Any, Optional, List, Tuple, Union, Dict
 
-from jsktoolbox.tktool.base import TkBase
+from .base import TkBase
 
 
 class CreateToolTip(TkBase):
@@ -30,11 +30,11 @@ class CreateToolTip(TkBase):
 
     __id: Optional[str] = None
     __tw: Optional[tk.Toplevel] = None
-    __waittime: int = None  # type: ignore
+    __wait_time: int = None  # type: ignore
     __widget: tk.Misc = None  # type: ignore
-    __wraplength: int = None  # type: ignore
+    __wrap_length: int = None  # type: ignore
     __text: Union[str, List[str], Tuple[str]] = None  # type: ignore
-    __textvariable: tk.StringVar = None  # type: ignore
+    __text_variable: tk.StringVar = None  # type: ignore
     __label_attr: Dict[str, Any] = None  # type: ignore
 
     def __init__(
@@ -57,8 +57,8 @@ class CreateToolTip(TkBase):
         if kwargs:
             self.__label_attr.update(kwargs)
 
-        self.__waittime = wait_time
-        self.__wraplength = wrap_length
+        self.__wait_time = wait_time
+        self.__wrap_length = wrap_length
         self.__widget = widget
 
         # set message
@@ -79,7 +79,7 @@ class CreateToolTip(TkBase):
     def __schedule(self) -> None:
         """Schedule method."""
         self.__unschedule()
-        self.__id = self.__widget.after(self.__waittime, self.__showtip)
+        self.__id = self.__widget.after(self.__wait_time, self.__showtip)
 
     def __unschedule(self) -> None:
         """Unschedule method."""
@@ -104,7 +104,7 @@ class CreateToolTip(TkBase):
         self.__tw.wm_geometry(f"+{__x}+{__y}")
         label = tk.Label(
             self.__tw,
-            wraplength=self.__wraplength,
+            wraplength=self.__wrap_length,
         )
         for key in self.__label_attr.keys():
             label[key.lower()] = self.__label_attr[key]
@@ -124,9 +124,9 @@ class CreateToolTip(TkBase):
     @property
     def text(self) -> Union[str, tk.StringVar]:
         """Return text message."""
-        if self.__text is None and self.__textvariable is None:
+        if self.__text is None and self.__text_variable is None:
             self.__text = ""
-        if self.__textvariable is None:
+        if self.__text_variable is None:
             if isinstance(self.__text, (List, Tuple)):
                 tmp: str = ""
                 for msg in self.__text:
@@ -134,13 +134,13 @@ class CreateToolTip(TkBase):
                 return tmp
             return self.__text
         else:
-            return self.__textvariable
+            return self.__text_variable
 
     @text.setter
     def text(self, value: Union[str, List[str], Tuple[str], tk.StringVar]) -> None:
         """Set text message object."""
         if isinstance(value, tk.StringVar):
-            self.__textvariable = value
+            self.__text_variable = value
         else:
             self.__text = value
 
@@ -192,8 +192,8 @@ class VerticalScrolledTkFrame(tk.Frame, TkBase):
         """The interior property."""
         return self.__interior
 
-    def __configure_interior(self, event) -> None:
-        # Update the scrollbars to match the size of the inner frame.
+    def __configure_interior(self, event: Optional[tk.Event] = None) -> None:
+        # Update the scrollbar to match the size of the inner frame.
         self.__canvas.config(
             scrollregion=(
                 0,
@@ -206,7 +206,7 @@ class VerticalScrolledTkFrame(tk.Frame, TkBase):
             # Update the canvas's width to fit the inner frame.
             self.__canvas.config(width=self.__interior.winfo_reqwidth())
 
-    def __configure_canvas(self, event: tk.Event) -> None:
+    def __configure_canvas(self, event: Optional[tk.Event] = None) -> None:
         # print(f"{event}")
         # print(f"{type(event)}")
         if self.__interior.winfo_reqwidth() != self.__canvas.winfo_width():
@@ -286,8 +286,8 @@ class VerticalScrolledTtkFrame(ttk.Frame, TkBase):
         """The interior property."""
         return self.__interior
 
-    def __configure_interior(self, event) -> None:
-        # Update the scrollbars to match the size of the inner frame.
+    def __configure_interior(self, event: Optional[tk.Event] = None) -> None:
+        # Update the scrollbar to match the size of the inner frame.
         self.__canvas.config(
             scrollregion=(
                 0,

@@ -3,7 +3,7 @@
   Author:  Jacek Kotlarski --<szumak@virthost.pl>
   Created: 24.06.2023
 
-  Purpose: intrfaces class.
+  Purpose: interfaces class.
 """
 
 from abc import ABC, abstractmethod

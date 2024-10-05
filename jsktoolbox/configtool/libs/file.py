@@ -8,10 +8,11 @@
 
 from inspect import currentframe
 from typing import List, Optional
-from jsktoolbox.attribtool import NoDynamicAttributes, ReadOnlyClass
-from jsktoolbox.raisetool import Raise
-from jsktoolbox.libs.base_data import BData
-from jsktoolbox.libs.system import PathChecker
+
+from ...attribtool import NoDynamicAttributes, ReadOnlyClass
+from ...raisetool import Raise
+from ...basetool.data import BData
+from ...systemtool import PathChecker
 
 
 class _Keys(object, metaclass=ReadOnlyClass):
@@ -20,7 +21,7 @@ class _Keys(object, metaclass=ReadOnlyClass):
     For internal purpose only.
     """
 
-    FILE = "__file__"
+    FILE: str = "__file__"
 
 
 class FileProcessor(BData, NoDynamicAttributes):
@@ -32,36 +33,55 @@ class FileProcessor(BData, NoDynamicAttributes):
     @property
     def file(self) -> Optional[str]:
         """Return config file path."""
-        if _Keys.FILE not in self._data:
-            self._data[_Keys.FILE] = None
-        if isinstance(self._data[_Keys.FILE], PathChecker):
-            return self._data[_Keys.FILE].path
-        return self._data[_Keys.FILE]
+        out: Optional[PathChecker] = self._get_data(
+            key=_Keys.FILE,
+        )
+        if out:
+            return out.path
+        return None
 
     @file.setter
     def file(self, path: str) -> None:
         """Set file name."""
-        self._data[_Keys.FILE] = PathChecker(path)
+        self._set_data(
+            key=_Keys.FILE,
+            set_default_type=PathChecker,
+            value=PathChecker(path),
+        )
 
     @property
     def file_exists(self) -> bool:
         """Check if the file exists and is a file."""
-        obj: PathChecker = self._data[_Keys.FILE]
-        return obj.exists and (obj.is_file or obj.is_symlink) and not obj.is_dir
+        obj: Optional[PathChecker] = self._get_data(key=_Keys.FILE)
+        if obj:
+            return obj.exists and (obj.is_file or obj.is_symlink) and not obj.is_dir
+        raise Raise.error(
+            f"{self._c_name}.file not set.",
+            AttributeError,
+            self._c_name,
+            currentframe(),
+        )
 
     def file_create(self) -> bool:
         """Try to create file."""
         if self.file_exists:
             return True
-        obj: PathChecker = self._data[_Keys.FILE]
-        if obj.exists and obj.is_dir:
-            raise Raise.error(
-                f"Given path: {obj.path} exists and is a directory.",
-                OSError,
-                self._c_name,
-                currentframe(),
-            )
-        return obj.create()
+        obj: Optional[PathChecker] = self._get_data(key=_Keys.FILE)
+        if obj:
+            if obj.exists and obj.is_dir:
+                raise Raise.error(
+                    f"Given path: {obj.path} exists and is a directory.",
+                    OSError,
+                    self._c_name,
+                    currentframe(),
+                )
+            return obj.create()
+        raise Raise.error(
+            f"{self._c_name}.file not set.",
+            AttributeError,
+            self._c_name,
+            currentframe(),
+        )
 
     def read(self) -> str:
         """Try to read config file."""

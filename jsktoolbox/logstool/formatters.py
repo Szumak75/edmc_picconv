@@ -6,11 +6,10 @@
   Purpose: LogFormatter classes.
 """
 
-import time
 from datetime import datetime
 
-from jsktoolbox.libs.base_logs import BLogFormatter
-from jsktoolbox.datetool import Timestamp
+from ..basetool.logs import BLogFormatter
+from ..datetool import Timestamp
 
 
 class LogFormatterNull(BLogFormatter):
@@ -27,11 +26,11 @@ class LogFormatterDateTime(BLogFormatter):
 
     def __init__(self) -> None:
         """Constructor."""
-        self._forms_.append(self.__get_formated_date__)
+        self._forms_.append(self.__get_formatted_date__)
         self._forms_.append("{message}")
         self._forms_.append("[{name}]: {message}")
 
-    def __get_formated_date__(self) -> str:
+    def __get_formatted_date__(self) -> str:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -40,11 +39,11 @@ class LogFormatterTime(BLogFormatter):
 
     def __init__(self) -> None:
         """Constructor."""
-        self._forms_.append(self.__get_formated_time__)
+        self._forms_.append(self.__get_formatted_time__)
         self._forms_.append("{message}")
         self._forms_.append("[{name}]: {message}")
 
-    def __get_formated_time__(self) -> str:
+    def __get_formatted_time__(self) -> str:
         return datetime.now().strftime("%H:%M:%S")
 
 
@@ -53,7 +52,7 @@ class LogFormatterTimestamp(BLogFormatter):
 
     def __init__(self) -> None:
         """Constructor."""
-        self._forms_.append(Timestamp.now)
+        self._forms_.append(Timestamp.now())
         self._forms_.append("{message}")
         self._forms_.append("[{name}]: {message}")
 

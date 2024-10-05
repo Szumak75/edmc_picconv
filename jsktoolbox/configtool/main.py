@@ -9,12 +9,13 @@
 import re
 from inspect import currentframe
 from typing import List, Dict, Optional, Any
-from jsktoolbox.attribtool import NoDynamicAttributes, ReadOnlyClass
-from jsktoolbox.raisetool import Raise
-from jsktoolbox.libs.base_data import BData
-from jsktoolbox.configtool.libs.file import FileProcessor
-from jsktoolbox.configtool.libs.data import DataProcessor
-from jsktoolbox.configtool.libs.data import SectionModel
+
+from ..attribtool import NoDynamicAttributes, ReadOnlyClass
+from ..raisetool import Raise
+from ..basetool.data import BData
+from .libs.file import FileProcessor
+from .libs.data import DataProcessor
+from .libs.data import SectionModel
 
 
 class _Keys(object, metaclass=ReadOnlyClass):
@@ -23,20 +24,20 @@ class _Keys(object, metaclass=ReadOnlyClass):
     For internal purpose only.
     """
 
-    DESC = "__desc__"
-    DP = "__data_processor__"
-    FP = "__file_processor__"
-    RE_BOOL = "__re_bool__"
-    RE_DESC = "__re_description__"
-    RE_FALSE = "__re_false__"
-    RE_FLOAT = "__re_float__"
-    RE_INT = "__re_integer__"
-    RE_LIST = "__re_list__"
-    RE_SECTION = "__re_section__"
-    RE_TRUE = "__re_true__"
-    RE_VAR = "__re_variable__"
-    VALUE = "__value__"
-    VARNAME = "__varname__"
+    DESC: str = "__desc__"
+    DP: str = "__data_processor__"
+    FP: str = "__file_processor__"
+    RE_BOOL: str = "__re_bool__"
+    RE_DESC: str = "__re_description__"
+    RE_FALSE: str = "__re_false__"
+    RE_FLOAT: str = "__re_float__"
+    RE_INT: str = "__re_integer__"
+    RE_LIST: str = "__re_list__"
+    RE_SECTION: str = "__re_section__"
+    RE_TRUE: str = "__re_true__"
+    RE_VAR: str = "__re_variable__"
+    VALUE: str = "__value__"
+    VARNAME: str = "__varname__"
 
 
 class Config(BData, NoDynamicAttributes):
@@ -49,8 +50,12 @@ class Config(BData, NoDynamicAttributes):
         auto_create: bool = False,
     ) -> None:
         """Constructor."""
-        self._data[_Keys.FP] = FileProcessor()
-        self._data[_Keys.DP] = DataProcessor()
+        self._set_data(
+            key=_Keys.FP, value=FileProcessor(), set_default_type=FileProcessor
+        )
+        self._set_data(
+            key=_Keys.DP, value=DataProcessor(), set_default_type=DataProcessor
+        )
         self.__fp.file = filename
         self.__dp.main_section = main_section_name
         if auto_create:
@@ -70,12 +75,12 @@ class Config(BData, NoDynamicAttributes):
     @property
     def __fp(self) -> FileProcessor:
         """Return FileProcessor object."""
-        return self._data[_Keys.FP]
+        return self._get_data(key=_Keys.FP)  # type: ignore
 
     @property
     def __dp(self) -> DataProcessor:
         """Return DataProcessor object."""
-        return self._data[_Keys.DP]
+        return self._get_data(key=_Keys.DP)  # type: ignore
 
     @property
     def file_exists(self) -> bool:

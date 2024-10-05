@@ -14,8 +14,8 @@ from codecs import getencoder
 from inspect import currentframe
 from random import randrange
 
-from jsktoolbox.attribtool import NoDynamicAttributes
-from jsktoolbox.raisetool import Raise
+from ..attribtool import NoDynamicAttributes
+from ..raisetool import Raise
 
 # https://www.tutorialspoint.com/cryptography_with_python/cryptography_with_python_xor_process.htm
 # https://teachen.info/cspp/unit4/lab04-02.html
@@ -40,9 +40,11 @@ class SimpleCrypto(NoDynamicAttributes):
     def salt_generator(cls, length: int = 8) -> int:
         """Method for generate random salt with specific length.
 
-        length: int - number of digits in the generated salt
+        ### Arguments
+        * length [int] - number of digits in the generated salt
 
-        Return: int - salt number
+        ### Returns
+        [int] - salt number
         """
         if length < 1:
             raise Raise.error(
@@ -57,10 +59,12 @@ class SimpleCrypto(NoDynamicAttributes):
     def caesar_encrypt(cls, salt: int, message: str) -> str:
         """Caesar encoder method with chars translate table.
 
-        salt: int    - a number used to calculate the offset in the translation table,
-        message: str - string to encode,
+        ### Arguments:
+        * salt [int]    - a number used to calculate the offset in the translation table,
+        * message [str] - string to encode,
 
-        Return: str  - encoded string
+        ### Returns:
+        [str]  - encoded string
         """
         if not isinstance(salt, int):
             raise Raise.error(
@@ -79,18 +83,20 @@ class SimpleCrypto(NoDynamicAttributes):
         chars: str = cls.chars_table_generator()
         chars_len: int = len(chars)
         shift: int = salt % chars_len
-        transtable: Dict = str.maketrans(chars, chars[shift:] + chars[:shift])
+        trans_table: Dict = str.maketrans(chars, chars[shift:] + chars[:shift])
 
-        return message.translate(transtable)
+        return message.translate(trans_table)
 
     @classmethod
     def caesar_decrypt(cls, salt: int, message: str) -> str:
         """Caesar decoder method with chars translate table.
 
-        salt: int    - a number used to calculate the offset in the translation table,
-        message: str - encoded string,
+        ### Arguments:
+        * salt [int]    - a number used to calculate the offset in the translation table,
+        * message [str] - encoded string,
 
-        Return: str  - decoded string
+        ### Returns:
+        [str]  - decoded string
         """
         if not isinstance(salt, int):
             raise Raise.error(
@@ -109,17 +115,19 @@ class SimpleCrypto(NoDynamicAttributes):
         chars: str = cls.chars_table_generator()
         chars_len: int = len(chars)
         shift: int = chars_len - (salt % chars_len)
-        transtable: Dict = str.maketrans(chars, chars[shift:] + chars[:shift])
+        trans_table: Dict = str.maketrans(chars, chars[shift:] + chars[:shift])
 
-        return message.translate(transtable)
+        return message.translate(trans_table)
 
     @classmethod
     def rot13_codec(cls, message: str) -> str:
         """Rot13 encoder/decoder method.
 
-        message: str - string for encode/decode
+        ### Arguments:
+        * message [str] - string for encode/decode
 
-        Return: str - encoded/decoded string
+        ### Returns:
+        [str] - encoded/decoded string
         """
         if not isinstance(message, str):
             raise Raise.error(
@@ -135,9 +143,11 @@ class SimpleCrypto(NoDynamicAttributes):
     def b64_encrypt(cls, message: str) -> str:
         """Base64 encoder method.
 
-        message: str - string for encode,
+        ### Arguments:
+        * message [str] - string for encode,
 
-        Return: str - base64 encoded string.
+        ### Returns:
+        [str] - base64 encoded string.
         """
         if not isinstance(message, str):
             raise Raise.error(
@@ -152,9 +162,11 @@ class SimpleCrypto(NoDynamicAttributes):
     def b64_decrypt(cls, message: str) -> str:
         """Base64 decoder method.
 
-        message: str - base64 string for decode,
+        ### Arguments:
+        * message [str] - base64 string for decode,
 
-        Return: str - decoded string.
+        ### Returns:
+        [str] - decoded string.
         """
         if not isinstance(message, str):
             raise Raise.error(
@@ -169,10 +181,12 @@ class SimpleCrypto(NoDynamicAttributes):
     def multiple_encrypt(cls, salt: int, message: str) -> str:
         """Multiple encoder method.
 
-        salt: int    - a number used to calculate the offset in the translation table,
-        message: str - string to encode,
+        ### Arguments:
+        * salt [int]    - a number used to calculate the offset in the translation table,
+        * message [str] - string to encode,
 
-        Return: str  - encoded string
+        ### Returns:
+        [str]  - encoded string
         """
         if not isinstance(message, str):
             raise Raise.error(
@@ -187,10 +201,12 @@ class SimpleCrypto(NoDynamicAttributes):
     def multiple_decrypt(cls, salt: int, message: str) -> str:
         """Multiple decoder method.
 
-        salt: int    - a number used to calculate the offset in the translation table,
-        message: str - encoded string,
+        ### Arguments:
+        * salt [int]    - a number used to calculate the offset in the translation table,
+        * message [str] - encoded string,
 
-        Return: str  - decoded string
+        ### Returns:
+        [str]  - decoded string
         """
         if not isinstance(message, str):
             raise Raise.error(

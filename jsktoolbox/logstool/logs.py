@@ -10,18 +10,19 @@ import time
 import threading
 from inspect import currentframe
 
-from typing import Optional, Tuple
+from typing import Optional
 
-from jsktoolbox.attribtool import NoDynamicAttributes, ReadOnlyClass
-from jsktoolbox.raisetool import Raise
-from jsktoolbox.libs.base_logs import (
+from .queue import LoggerQueue
+
+from .keys import LogKeys, LogsLevelKeys
+
+from ..attribtool import NoDynamicAttributes, ReadOnlyClass
+from ..raisetool import Raise
+from ..basetool.logs import (
     BLoggerQueue,
-    LoggerQueue,
-    LogsLevelKeys,
-    Keys,
 )
-from jsktoolbox.libs.base_th import ThBaseObject
-from jsktoolbox.logstool.engines import *
+from ..basetool.threads import ThBaseObject
+from .engines import *
 
 
 class _Keys(object, metaclass=ReadOnlyClass):
@@ -30,8 +31,8 @@ class _Keys(object, metaclass=ReadOnlyClass):
     For internal purpose only.
     """
 
-    LCO = "__LCO__"
-    LEO = "__LEO__"
+    LCO: str = "__LCO__"
+    LEO: str = "__LEO__"
 
 
 class LoggerClient(BLoggerQueue, NoDynamicAttributes):
@@ -42,9 +43,9 @@ class LoggerClient(BLoggerQueue, NoDynamicAttributes):
     ) -> None:
         """Constructor.
 
-        Arguments:
-        queue [LoggerQueue] - optional LoggerQeueu class object from LoggerEngine, required, but can be set after the object is created,
-        name [str] - optional client name for logs decorator
+        ### Arguments:
+        * queue [LoggerQueue] - optional LoggerQueue class object from LoggerEngine, required, but can be set after the object is created,
+        * name [str] - optional client name for logs decorator
         """
         # store name
         self.name = name
@@ -54,22 +55,18 @@ class LoggerClient(BLoggerQueue, NoDynamicAttributes):
 
     @property
     def name(self) -> Optional[str]:
-        """Get LoggerClient name string."""
-        if Keys.NAME not in self._data:
-            self._data[Keys.NAME] = None
-        return self._data[Keys.NAME]
+        """Get name property."""
+        return self._get_data(key=LogKeys.NAME, set_default_type=Optional[str])
 
     @name.setter
     def name(self, name: Optional[str]) -> None:
-        """Set LoggerClient name string."""
-        if name and not isinstance(name, str):
-            raise Raise.error(
-                f"Expected 'name' as string type, received: '{type(name)}'.",
-                TypeError,
-                self._c_name,
-                currentframe(),
+        """Set name property."""
+        if name is None:
+            self._set_data(key=LogKeys.NAME, value=None, set_default_type=Optional[str])
+        else:
+            self._set_data(
+                key=LogKeys.NAME, value=name.strip(), set_default_type=Optional[str]
             )
-        self._data[Keys.NAME] = name
 
     def message(self, message: str, log_level: str = LogsLevelKeys.INFO) -> None:
         """Send message to logging subsystem."""
@@ -175,16 +172,16 @@ class LoggerEngine(BLoggerQueue, NoDynamicAttributes):
         # make logs queue object
         self.logs_queue = LoggerQueue()
         # default logs level configuration
-        self._data[Keys.NO_CONF] = {}
-        self._data[Keys.NO_CONF][LogsLevelKeys.INFO] = [LoggerEngineStdout()]
-        self._data[Keys.NO_CONF][LogsLevelKeys.WARNING] = [LoggerEngineStdout()]
-        self._data[Keys.NO_CONF][LogsLevelKeys.NOTICE] = [LoggerEngineStdout()]
-        self._data[Keys.NO_CONF][LogsLevelKeys.DEBUG] = [LoggerEngineStderr()]
-        self._data[Keys.NO_CONF][LogsLevelKeys.ERROR] = [
+        self._data[LogKeys.NO_CONF] = {}
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.INFO] = [LoggerEngineStdout()]
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.WARNING] = [LoggerEngineStdout()]
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.NOTICE] = [LoggerEngineStdout()]
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.DEBUG] = [LoggerEngineStderr()]
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.ERROR] = [
             LoggerEngineStdout(),
             LoggerEngineStderr(),
         ]
-        self._data[Keys.NO_CONF][LogsLevelKeys.CRITICAL] = [
+        self._data[LogKeys.NO_CONF][LogsLevelKeys.CRITICAL] = [
             LoggerEngineStdout(),
             LoggerEngineStderr(),
         ]
@@ -192,9 +189,9 @@ class LoggerEngine(BLoggerQueue, NoDynamicAttributes):
     def add_engine(self, log_level: str, engine: ILoggerEngine) -> None:
         """Add LoggerEngine to specific log level.
 
-        Arguments:
-        log_level [str] - String Key from .base_log.LogsLevelKeys.keys,
-        engine [ILoggerEngine] - an object created from Engine classes.
+        ### Arguments:
+        * log_level [str] - String Key from .base_log.LogsLevelKeys.keys,
+        * engine [ILoggerEngine] - an object created from Engine classes.
         """
         if not isinstance(log_level, str):
             raise Raise.error(
@@ -210,23 +207,23 @@ class LoggerEngine(BLoggerQueue, NoDynamicAttributes):
                 self._c_name,
                 currentframe(),
             )
-        if Keys.CONF not in self._data:
-            self._data[Keys.CONF] = {}
-            self._data[Keys.CONF][log_level] = [engine]
+        if LogKeys.CONF not in self._data:
+            self._data[LogKeys.CONF] = {}
+            self._data[LogKeys.CONF][log_level] = [engine]
         else:
-            if log_level not in self._data[Keys.CONF].keys():
-                self._data[Keys.CONF][log_level] = [engine]
+            if log_level not in self._data[LogKeys.CONF].keys():
+                self._data[LogKeys.CONF][log_level] = [engine]
             else:
                 test = False
-                for i in range(0, len(self._data[Keys.CONF][log_level])):
+                for i in range(0, len(self._data[LogKeys.CONF][log_level])):
                     if (
-                        self._data[Keys.CONF][log_level][i].__class__
+                        self._data[LogKeys.CONF][log_level][i].__class__
                         == engine.__class__
                     ):
-                        self._data[Keys.CONF][log_level][i] = engine
+                        self._data[LogKeys.CONF][log_level][i] = engine
                         test = True
                 if not test:
-                    self._data[Keys.CONF][log_level].append(engine)
+                    self._data[LogKeys.CONF][log_level].append(engine)
 
     def send(self) -> None:
         """The LoggerEngine method.
@@ -240,15 +237,15 @@ class LoggerEngine(BLoggerQueue, NoDynamicAttributes):
                     # get tuple(log_level, message)
                     log_level, message = item
                     # check if has have configured logging subsystem
-                    if Keys.CONF in self._data and len(self._data[Keys.CONF]) > 0:
-                        if log_level in self._data[Keys.CONF]:
-                            for leng in self._data[Keys.CONF][log_level]:
-                                engine: ILoggerEngine = leng
+                    if LogKeys.CONF in self._data and len(self._data[LogKeys.CONF]) > 0:
+                        if log_level in self._data[LogKeys.CONF]:
+                            for l_eng in self._data[LogKeys.CONF][log_level]:
+                                engine: ILoggerEngine = l_eng
                                 engine.send(message)
                     else:
-                        if log_level in self._data[Keys.NO_CONF]:
-                            for leng in self._data[Keys.NO_CONF][log_level]:
-                                engine: ILoggerEngine = leng
+                        if log_level in self._data[LogKeys.NO_CONF]:
+                            for l_eng in self._data[LogKeys.NO_CONF][log_level]:
+                                engine: ILoggerEngine = l_eng
                                 engine.send(message)
                 else:
                     return None
@@ -269,48 +266,34 @@ class ThLoggerProcessor(threading.Thread, ThBaseObject, NoDynamicAttributes):
 
     @property
     def logger_engine(self) -> Optional[LoggerEngine]:
-        """Return LoggerEngine object if any."""
-        if _Keys.LEO not in self._data:
-            self._data[_Keys.LEO] = None
-        return self._data[_Keys.LEO]
+        """Returns LoggerEngine object if any."""
+        return self._get_data(key=_Keys.LEO, set_default_type=Optional[LoggerEngine])
 
     @logger_engine.setter
-    def logger_engine(self, obj: LoggerEngine) -> None:
-        """Set LoggerEngine object."""
-        if not isinstance(obj, LoggerEngine):
-            raise Raise.error(
-                f"Excpected LoggerEngine type, received: '{type(obj)}'.",
-                TypeError,
-                self._c_name,
-                currentframe(),
-            )
-        self._data[_Keys.LEO] = obj
+    def logger_engine(self, engine: LoggerEngine) -> None:
+        """Sets LoggerEngine object."""
+        self._set_data(
+            key=_Keys.LEO, set_default_type=Optional[LoggerEngine], value=engine
+        )
         if self.logger_client and self.logger_engine and self.logger_engine.logs_queue:
             self.logger_client.logs_queue = self.logger_engine.logs_queue
 
     @property
     def logger_client(self) -> Optional[LoggerClient]:
-        """Return LoggerClient object if any."""
-        if _Keys.LCO not in self._data:
-            self._data[_Keys.LCO] = None
-        return self._data[_Keys.LCO]
+        """Returns LoggerClient object if any."""
+        return self._get_data(key=_Keys.LCO, set_default_type=Optional[LoggerClient])
 
     @logger_client.setter
-    def logger_client(self, obj: LoggerClient) -> None:
+    def logger_client(self, client: LoggerClient) -> None:
         """Set LoggerEngine object."""
-        if not isinstance(obj, LoggerClient):
-            raise Raise.error(
-                f"Expected LoggerClient type, received: '{type(obj)}'.",
-                TypeError,
-                self._c_name,
-                currentframe(),
-            )
-        self._data[_Keys.LCO] = obj
+        self._set_data(
+            key=_Keys.LCO, set_default_type=Optional[LoggerClient], value=client
+        )
         if (
             self.logger_engine
             and self.logger_engine.logs_queue
             and self.logger_client
-            and obj.logs_queue is None
+            and client.logs_queue is None
         ):
             self.logger_client.logs_queue = self.logger_engine.logs_queue
 
@@ -332,13 +315,13 @@ class ThLoggerProcessor(threading.Thread, ThBaseObject, NoDynamicAttributes):
                 currentframe(),
             )
         if self._debug:
-            self.logger_client.message_debug = f"[{self._c_name}] Start."
+            self.logger_client.message_debug = f"[{self._c_name}] starting..."
         # run
         while not self.stopped:
             self.logger_engine.send()
             time.sleep(self.sleep_period)
         if self._debug:
-            self.logger_client.message_debug = f"[{self._c_name}] Stop."
+            self.logger_client.message_debug = f"[{self._c_name}] stopped."
         self.logger_engine.send()
 
     def stop(self) -> None:
