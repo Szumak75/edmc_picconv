@@ -7,5 +7,10 @@
     "python.analysis.extraPaths": [
         "~/Projects/EDMarketConnector",
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "cSpell.words": [
+        "EDPC",
+        "picconv",
+        "thworker"
+    ]
 }
