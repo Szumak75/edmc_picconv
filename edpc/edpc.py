@@ -42,7 +42,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         self.shutting_down = False
 
         self.pluginname = "EDPC"
-        version = "0.3.9"
+        version = "0.3.10"
 
         # logging subsystem
         self.qlog = SimpleQueue()
