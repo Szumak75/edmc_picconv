@@ -12,8 +12,8 @@ from typing import Any, Dict, Optional, Tuple
 
 import myNotebook as nb
 from config import config
-from picconv_libs.edpc import EDPC
-from picconv_libs.system import Directory, LogLevels
+from edpc.edpc import EDPC
+from edpc.system import Directory, LogLevels
 
 
 edpc_object = EDPC()
