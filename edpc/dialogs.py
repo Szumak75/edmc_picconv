@@ -9,48 +9,207 @@ from inspect import currentframe
 import tkinter as tk
 from queue import Queue, SimpleQueue
 from tkinter import filedialog, ttk
-from typing import Optional, Dict, Union, Any
+from typing import Optional, Union
 
 import myNotebook as nb
-from edpc.jsktoolbox.attribtool import NoDynamicAttributes
 from edpc.jsktoolbox.raisetool import Raise
 from edpc.base_log import BLogClient
 from edpc.system import EnvLocal, LogClient
+from edpc.keys import EDPCKeys
 
 
-class ConfigDialog(BLogClient, NoDynamicAttributes):
+class ConfigDialog(BLogClient):
     """Create config dialog for plugin."""
-
-    __vars: Dict[str, Any] = None  # type: ignore
-    __pic_status: nb.Label = None  # type: ignore
 
     def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize ConfigDialog class."""
-        self.__vars = {
-            "pluginname": None,
-            "version": None,
-            "src_entry": None,
-            "dst_entry": None,
-            "picmove_check": None,
-            "picconv_check": None,
-            "pictype_check": None,
-        }
-        self.__vars["picsrcdir"] = None  #: Optional[tk.StringVar]
-        self.__vars["picdstdir"] = None  #: Optional[tk.StringVar]
-        self.__vars["pictype"] = tk.StringVar(value="jpg")
-        self.__vars["picconvert"] = tk.IntVar(value=0)
-        self.__vars["picmove"] = tk.IntVar(value=1)
-        self.__vars["status"] = None  #: Optional[tk.Label]
+        self._set_data(
+            key=EDPCKeys.PLUGIN_NAME, value=None, set_default_type=Optional[str]
+        )
+        self._set_data(
+            key=EDPCKeys.PLUGIN_VERSION, value=None, set_default_type=Optional[str]
+        )
+        self._set_data(
+            key=EDPCKeys.SRC_ENTRY, value=None, set_default_type=Optional[nb.EntryMenu]
+        )
+        self._set_data(
+            key=EDPCKeys.DST_ENTRY, value=None, set_default_type=Optional[nb.EntryMenu]
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_MOVE_CHECK,
+            value=None,
+            set_default_type=Optional[nb.Checkbutton],
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_CONV_CHECK,
+            value=None,
+            set_default_type=Optional[nb.Checkbutton],
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_TYPE_CHECK,
+            value=None,
+            set_default_type=Optional[nb.Checkbutton],
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_SRC_DIR,
+            value=None,
+            set_default_type=Optional[tk.StringVar],
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_DST_DIR,
+            value=None,
+            set_default_type=Optional[tk.StringVar],
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_TYPE,
+            value=tk.StringVar(value="jpg"),
+            set_default_type=tk.StringVar,
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_CONVERT,
+            value=tk.IntVar(value=0),
+            set_default_type=tk.IntVar,
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_MOVE,
+            value=tk.IntVar(value=1),
+            set_default_type=tk.IntVar,
+        )
+        self._set_data(
+            key=EDPCKeys.STATUS, value=None, set_default_type=Optional[tk.Label]
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_STATUS, value=None, set_default_type=Optional[nb.Label]
+        )
 
         # init log subsystem
         if not isinstance(queue, (Queue, SimpleQueue)):
             raise Raise.error(
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
                 TypeError,
-                self.__class__.__name__,
+                self._c_name,
                 currentframe(),
             )
         self.logger = LogClient(queue)
+
+    @property
+    def plugin_name(self) -> str:
+        """Give me the name of plugin."""
+        return self._get_data(key=EDPCKeys.PLUGIN_NAME)  # type: ignore
+
+    @plugin_name.setter
+    def plugin_name(self, arg: str) -> None:
+        self._set_data(key=EDPCKeys.PLUGIN_NAME, value=arg)
+
+    @property
+    def version(self) -> str:
+        """Give me the version of plugin."""
+        return self._get_data(key=EDPCKeys.PLUGIN_VERSION)  # type: ignore
+
+    @version.setter
+    def version(self, arg: str) -> None:
+        self._set_data(key=EDPCKeys.PLUGIN_VERSION, value=arg)
+
+    @property
+    def status(self) -> Optional[tk.Label]:
+        """Give me the version of plugin."""
+        return self._get_data(key=EDPCKeys.STATUS)
+
+    @status.setter
+    def status(self, arg: tk.Label) -> None:
+        self._set_data(key=EDPCKeys.STATUS, value=arg)
+
+    @property
+    def src_entry(self) -> nb.EntryMenu:
+        """Give me the Entry with source directory."""
+        return self._get_data(key=EDPCKeys.SRC_ENTRY)  # type: ignore
+
+    @src_entry.setter
+    def src_entry(self, arg: nb.EntryMenu) -> None:
+        self._set_data(key=EDPCKeys.SRC_ENTRY, value=arg)
+
+    @property
+    def dst_entry(self) -> nb.EntryMenu:
+        """Give me the Entry with destination directory."""
+        return self._get_data(key=EDPCKeys.DST_ENTRY)  # type: ignore
+
+    @dst_entry.setter
+    def dst_entry(self, arg: nb.EntryMenu) -> None:
+        self._set_data(key=EDPCKeys.DST_ENTRY, value=arg)
+
+    @property
+    def pic_status(self) -> nb.Label:
+        """Give me access to the pic_status Label."""
+        # return self.__vars['pic_status']
+        return self._get_data(key=EDPCKeys.PIC_STATUS)  # type: ignore
+
+    @pic_status.setter
+    def pic_status(self, arg: nb.Label) -> None:
+        # self.__vars["pic_status"] = arg
+        self._set_data(key=EDPCKeys.PIC_STATUS, value=arg)
+
+    @property
+    def pic_src_dir(self) -> Optional[tk.StringVar]:
+        """Give me string dir."""
+        return self._get_data(key=EDPCKeys.PIC_SRC_DIR)
+
+    @pic_src_dir.setter
+    def pic_src_dir(self, arg: tk.StringVar) -> None:
+        self._set_data(key=EDPCKeys.PIC_SRC_DIR, value=arg)
+
+    @property
+    def pic_dst_dir(self) -> Optional[tk.StringVar]:
+        """Give me string dir."""
+        return self._get_data(key=EDPCKeys.PIC_DST_DIR)
+
+    @pic_dst_dir.setter
+    def pic_dst_dir(self, arg: tk.StringVar) -> None:
+        self._set_data(key=EDPCKeys.PIC_DST_DIR, value=arg)
+
+    @property
+    def pic_move_check(self) -> nb.Checkbutton:
+        """Give me access to the picmove Check Button."""
+        return self._get_data(key=EDPCKeys.PIC_MOVE_CHECK)  # type: ignore
+
+    @pic_move_check.setter
+    def pic_move_check(self, arg: nb.Checkbutton) -> None:
+        self._set_data(key=EDPCKeys.PIC_MOVE_CHECK, value=arg)
+
+    @property
+    def pic_conv_check(self) -> nb.Checkbutton:
+        """Give me access to the picconv Check Button."""
+        return self._get_data(key=EDPCKeys.PIC_CONV_CHECK)  # type: ignore
+
+    @pic_conv_check.setter
+    def pic_conv_check(self, arg: nb.Checkbutton) -> None:
+        self._set_data(key=EDPCKeys.PIC_CONV_CHECK, value=arg)
+
+    @property
+    def pic_move(self) -> Optional[tk.IntVar]:
+        """Give me picmove value Int."""
+        return self._get_data(key=EDPCKeys.PIC_MOVE)
+
+    @pic_move.setter
+    def pic_move(self, arg: tk.IntVar) -> None:
+        self._set_data(key=EDPCKeys.PIC_MOVE, value=arg)
+
+    @property
+    def pic_convert(self) -> Optional[tk.IntVar]:
+        """Give me picconvert value Int."""
+        return self._get_data(key=EDPCKeys.PIC_CONVERT)
+
+    @pic_convert.setter
+    def pic_convert(self, arg: tk.IntVar) -> None:
+        self._set_data(key=EDPCKeys.PIC_CONVERT, value=arg)
+
+    @property
+    def pic_type(self) -> Optional[tk.StringVar]:
+        """Give me pictype value Str."""
+        return self._get_data(key=EDPCKeys.PIC_TYPE)
+
+    @pic_type.setter
+    def pic_type(self, arg: tk.StringVar) -> None:
+        self._set_data(key=EDPCKeys.PIC_TYPE, value=arg)
 
     def create_dialog(self, parent: nb.Notebook) -> nb.Frame:
         """Create and return config dialog."""
@@ -116,14 +275,16 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         )
 
         # move file
-        self.picmove_check = nb.Checkbutton(
+        self.pic_move_check = nb.Checkbutton(
             frame,
             text="delete source file",
-            variable=self.picmove,
+            variable=self.pic_move,
             onvalue=1,
             offvalue=0,
         )
-        self.picmove_check.grid(padx=10, row=rc_mf, column=0, columnspan=2, sticky=tk.W)
+        self.pic_move_check.grid(
+            padx=10, row=rc_mf, column=0, columnspan=2, sticky=tk.W
+        )
 
         # separator
         ttk.Separator(frame, orient=tk.HORIZONTAL).grid(
@@ -131,39 +292,40 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
         )
 
         # pic conv
-        self.picconv_check = nb.Checkbutton(
+        self.pic_conv_check = nb.Checkbutton(
             frame,
             text="enable type convert",
             variable=self.pic_convert,
             onvalue=1,
             offvalue=0,
         )
-        self.picconv_check.grid(
+        self.pic_conv_check.grid(
             padx=10, row=rc_conv, column=0, columnspan=2, sticky=tk.W
         )
         nb.Radiobutton(
-            frame, text="JPG", value="jpg", variable=self.__vars["pictype"]
+            frame,
+            text="JPG",
+            value="jpg",
+            variable=self._get_data(key=EDPCKeys.PIC_TYPE),
         ).grid(padx=10, row=rc_conv + 1, column=1, sticky=tk.W)
         nb.Radiobutton(
-            frame, text="PNG", value="png", variable=self.__vars["pictype"]
+            frame,
+            text="PNG",
+            value="png",
+            variable=self._get_data(key=EDPCKeys.PIC_TYPE),
         ).grid(padx=10, row=rc_conv + 2, column=1, sticky=tk.W)
         nb.Radiobutton(
-            frame, text="TIFF", value="tif", variable=self.__vars["pictype"]
+            frame,
+            text="TIFF",
+            value="tif",
+            variable=self._get_data(key=EDPCKeys.PIC_TYPE),
         ).grid(padx=10, row=rc_conv + 3, column=1, sticky=tk.W)
 
         # status
-        self.__pic_status = nb.Label(frame, text="")
+        self._set_data(key=EDPCKeys.PIC_STATUS, value=nb.Label(frame, text=""))
         self.pic_status.grid(padx=10, row=rc_stat, column=0, columnspan=3, sticky=tk.W)
 
         return frame
-
-    def disable_conv_dialogs(self) -> None:
-        """Disable unused entry."""
-        # entry.config(state="disabled")
-        self.picconv_check.config(state="disabled")
-        self.pic_status["text"] = (
-            "Type conversion unavailable due to missing libraries."
-        )
 
     def button_src_dir(self) -> None:
         """Run Button callback."""
@@ -216,122 +378,3 @@ class ConfigDialog(BLogClient, NoDynamicAttributes):
             else:
                 (self.pic_status)["text"] = ""
         self.logger.info = out
-
-    @property
-    def pluginname(self) -> str:
-        """Give me the name of plugin."""
-        return self.__vars["pluginname"]
-
-    @pluginname.setter
-    def pluginname(self, arg: str) -> None:
-        self.__vars["pluginname"] = arg
-
-    @property
-    def version(self) -> str:
-        """Give me the version of plugin."""
-        return self.__vars["version"]
-
-    @version.setter
-    def version(self, arg: str) -> None:
-        self.__vars["version"] = arg
-
-    @property
-    def status(self) -> Optional[tk.Label]:
-        """Give me the version of plugin."""
-        return self.__vars["status"]
-
-    @status.setter
-    def status(self, arg: tk.Label) -> None:
-        self.__vars["status"] = arg
-
-    @property
-    def src_entry(self) -> nb.EntryMenu:
-        """Give me the Entry with source directory."""
-        return self.__vars["src_entry"]
-
-    @src_entry.setter
-    def src_entry(self, arg: nb.EntryMenu) -> None:
-        self.__vars["src_entry"] = arg
-
-    @property
-    def dst_entry(self) -> nb.EntryMenu:
-        """Give me the Entry with destination directory."""
-        return self.__vars["dst_entry"]
-
-    @dst_entry.setter
-    def dst_entry(self, arg: nb.EntryMenu) -> None:
-        self.__vars["dst_entry"] = arg
-
-    @property
-    def pic_status(self) -> nb.Label:
-        """Give me access to the pic_status Label."""
-        # return self.__vars['pic_status']
-        return self.__pic_status
-
-    @pic_status.setter
-    def pic_status(self, arg: nb.Label) -> None:
-        # self.__vars["pic_status"] = arg
-        self.__pic_status = arg
-
-    @property
-    def pic_src_dir(self) -> Optional[tk.StringVar]:
-        """Give me string dir."""
-        return self.__vars["picsrcdir"]
-
-    @pic_src_dir.setter
-    def pic_src_dir(self, arg: tk.StringVar) -> None:
-        self.__vars["picsrcdir"] = arg
-
-    @property
-    def pic_dst_dir(self) -> Optional[tk.StringVar]:
-        """Give me string dir."""
-        return self.__vars["picdstdir"]
-
-    @pic_dst_dir.setter
-    def pic_dst_dir(self, arg: tk.StringVar) -> None:
-        self.__vars["picdstdir"] = arg
-
-    @property
-    def picmove_check(self) -> nb.Checkbutton:
-        """Give me access to the picmove Check Button."""
-        return self.__vars["picmove_check"]
-
-    @picmove_check.setter
-    def picmove_check(self, arg: nb.Checkbutton) -> None:
-        self.__vars["picmove_check"] = arg
-
-    @property
-    def picconv_check(self) -> nb.Checkbutton:
-        """Give me access to the picconv Check Button."""
-        return self.__vars["picconv_check"]
-
-    @picconv_check.setter
-    def picconv_check(self, arg: nb.Checkbutton) -> None:
-        self.__vars["picconv_check"] = arg
-
-    @property
-    def picmove(self) -> Optional[tk.IntVar]:
-        """Give me picmove value Int."""
-        return self.__vars["picmove"]
-
-    @picmove.setter
-    def picmove(self, arg: tk.IntVar) -> None:
-        self.__vars["picmove"] = arg
-
-    @property
-    def pic_convert(self) -> Optional[tk.IntVar]:
-        """Give me picconvert value Int."""
-        return self.__vars["picconvert"]
-
-    @pic_convert.setter
-    def pic_convert(self, arg: tk.IntVar) -> None:
-        self.__vars["picconvert"] = arg
-
-    @property
-    def pictype(self) -> Optional[tk.StringVar]:
-        """Give me pictype value Str."""
-        return self.__vars["pictype"]
-
-    @pictype.setter
-    def pictype(self, arg: tk.StringVar) -> None:
-        self.__vars["pictype"] = arg

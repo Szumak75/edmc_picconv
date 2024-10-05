@@ -5,25 +5,25 @@ Created on 30 dec 2022.
 @author: szumak@virthost.pl
 """
 
-import importlib
 from inspect import currentframe
 import os
 import shutil
 import time
 import tkinter as tk
-from datetime import datetime  # , timedelta
+from datetime import datetime, timedelta
 from queue import Queue, SimpleQueue
-from types import ModuleType
-from typing import List, Dict, Any, Optional, Union
+from typing import Optional, Union
 
-from edpc.jsktoolbox.attribtool import NoDynamicAttributes
+from PIL import Image
+
 from edpc.jsktoolbox.raisetool import Raise
 from edpc.base_log import BLogClient
 from edpc.base_message import BMessages
 from edpc.system import Directory, LogClient
+from edpc.keys import EDPCKeys
 
 
-class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
+class PicConverter(BLogClient, BMessages):
     """PicConverter class for ED Screenshots."""
 
     # {
@@ -36,31 +36,43 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
     # "Body":"Plaa Thua MS-Y b56-0 1 a"
     # }
 
-    __templates: Dict[str, str] = None  # type: ignore
-    __vars: Dict[str, Any] = None  # type: ignore
-
     def __init__(self, queue: Union[Queue, SimpleQueue]) -> None:
         """Initialize PicConverter class."""
-        self.__vars = {
-            "srcdir": None,
-            "dstdir": None,
-            "suffix": "bmp",
-            "remove": True,
-            "timedelta": None,
-            "pillow": False,
-            "converttype": False,
-            "pillib": None,
-        }
-        self.srcdir = Directory()
-        self.dstdir = Directory()
-        self.__templates = {
-            "logtime": "%Y-%m-%dT%H:%M:%SZ",
-            "pictime": "%Y%m%d-%H%M%S",
-            "picfile": "{} {}.{}",
-            "piccountfile": "{} {} ({:02d}).{}",
-        }
-        self.__vars["timedelta"] = datetime(3309, 1, 1, 1, 1, 43) - datetime(
-            2023, 1, 1, 2, 1, 43
+        self._set_data(
+            key=EDPCKeys.DST_DIR, value=None, set_default_type=Optional[Directory]
+        )
+        self._set_data(
+            key=EDPCKeys.SRC_DIR, value=None, set_default_type=Optional[Directory]
+        )
+        self._set_data(key=EDPCKeys.SUFFIX, value="bmp", set_default_type=str)
+        self._set_data(key=EDPCKeys.REMOVE, value=True, set_default_type=bool)
+        self._set_data(
+            key=EDPCKeys.DELTA_TIME, value=None, set_default_type=Optional[timedelta]
+        )
+        self._set_data(key=EDPCKeys.CONVERT_TYPE, value=False, set_default_type=bool)
+
+        self.src_dir = Directory()
+        self.dst_dir = Directory()
+        self._set_data(
+            key=EDPCKeys.LOG_TIME, value="%Y-%m-%dT%H:%M:%SZ", set_default_type=str
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_TIME,
+            value="%Y%m%d-%H%M%S",
+            set_default_type=str,
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_FILE,
+            value="{} {}.{}",
+            set_default_type=str,
+        )
+        self._set_data(
+            key=EDPCKeys.PIC_COUNT_FILE, value="{} {} ({:02d}).{}", set_default_type=str
+        )
+
+        self._set_data(
+            key=EDPCKeys.DELTA_TIME,
+            value=datetime(3309, 1, 1, 1, 1, 43) - datetime(2023, 1, 1, 2, 1, 43),
         )
 
         # init log subsystem
@@ -68,7 +80,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
             raise Raise.error(
                 f"Queue or SimpleQueue type expected, '{type(queue)}' received.",
                 TypeError,
-                self.__class__.__name__,
+                self._c_name,
                 currentframe(),
             )
         self.logger = LogClient(queue)
@@ -76,67 +88,62 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
     @property
     def remove(self) -> bool:
         """Give me decision to remove source file after conversion."""
-        return self.__vars["remove"]
+        return self._get_data(EDPCKeys.REMOVE)  # type: ignore
 
     @remove.setter
     def remove(self, arg: Union[bool, int, tk.IntVar]) -> None:
         if isinstance(arg, bool):
-            self.__vars["remove"] = arg
+            self._set_data(key=EDPCKeys.REMOVE, value=arg)
         elif isinstance(arg, int) and arg == 1:
-            self.__vars["remove"] = True
+            self._set_data(key=EDPCKeys.REMOVE, value=True)
         elif isinstance(arg, tk.IntVar) and arg.get() == 1:
-            self.__vars["remove"] = True
+            self._set_data(key=EDPCKeys.REMOVE, value=True)
         else:
-            self.__vars["remove"] = False
+            self._set_data(key=EDPCKeys.REMOVE, value=False)
 
     @property
-    def converttype(self) -> bool:
+    def convert_type(self) -> bool:
         """Give me decision to convert source file type."""
-        return self.__vars["converttype"]
+        return self._get_data(EDPCKeys.CONVERT_TYPE)  # type: ignore
 
-    @converttype.setter
-    def converttype(self, arg: Union[bool, int, tk.IntVar]) -> None:
+    @convert_type.setter
+    def convert_type(self, arg: Union[bool, int, tk.IntVar]) -> None:
         if isinstance(arg, bool):
-            self.__vars["converttype"] = arg
+            self._set_data(key=EDPCKeys.CONVERT_TYPE, value=arg)
         elif isinstance(arg, int) and arg == 1:
-            self.__vars["converttype"] = True
+            self._set_data(key=EDPCKeys.CONVERT_TYPE, value=True)
         elif isinstance(arg, tk.IntVar) and arg.get() == 1:
-            self.__vars["converttype"] = True
+            self._set_data(key=EDPCKeys.CONVERT_TYPE, value=True)
         else:
-            self.__vars["converttype"] = False
+            self._set_data(key=EDPCKeys.CONVERT_TYPE, value=False)
 
     @property
-    def srcdir(self) -> Directory:
+    def src_dir(self) -> Directory:
         """Give me source directory with files to convert."""
-        return self.__vars["srcdir"]
+        return self._get_data(key=EDPCKeys.SRC_DIR)  # type: ignore
 
-    @srcdir.setter
-    def srcdir(self, arg: Directory) -> None:
-        self.__vars["srcdir"] = arg
+    @src_dir.setter
+    def src_dir(self, arg: Directory) -> None:
+        self._set_data(key=EDPCKeys.SRC_DIR, value=arg)
 
     @property
-    def dstdir(self) -> Directory:
+    def dst_dir(self) -> Directory:
         """Give me destination directory for converted files."""
-        return self.__vars["dstdir"]
+        return self._get_data(key=EDPCKeys.DST_DIR)  # type: ignore
 
-    @dstdir.setter
-    def dstdir(self, arg: Directory) -> None:
-        self.__vars["dstdir"] = arg
+    @dst_dir.setter
+    def dst_dir(self, arg: Directory) -> None:
+        self._set_data(key=EDPCKeys.DST_DIR, value=arg)
 
     @property
     def suffix(self) -> str:
         """Suffix for pic filename."""
-        return self.__vars["suffix"]
+        return self._get_data(key=EDPCKeys.SUFFIX)  # type: ignore
 
     @suffix.setter
     def suffix(self, arg: str) -> None:
         """Setter for suffix pic filename."""
-        self.__vars["suffix"] = arg
-
-    @property
-    def templates(self) -> Dict[str, str]:
-        """Time templates."""
-        return self.__templates
+        self._set_data(key=EDPCKeys.SUFFIX, value=arg)
 
     def str_time(self, arg: str) -> str:
         """Timestamp from logs in local time convert to game time string.
@@ -145,72 +152,50 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         output: 33090101-010143
         """
         # create struct_time
-        str_time: time.struct_time = time.strptime(arg, self.templates["logtime"])
+        str_time: time.struct_time = time.strptime(arg, self._get_data(key=EDPCKeys.LOG_TIME))  # type: ignore
 
         # create datetime object
         dt_obj = datetime(*str_time[:6])
 
         # conversion local time to game time
-        dt_obj2: datetime = dt_obj + self.__vars["timedelta"]
+        dt_obj2: datetime = dt_obj + self._get_data(key=EDPCKeys.DELTA_TIME)  # type: ignore
 
-        return dt_obj2.strftime(self.templates["pictime"])
-
-    def has_pillow(self) -> bool:
-        """Check if Pillow is present and importable."""
-        self.logger.debug = "def has_pillow"
-
-        # skip another test
-        if self.__vars["pillow"]:
-            return True
-
-        for imod in [
-            "PIL.Image",  # system PIL
-        ]:
-            try:
-                image: ModuleType = importlib.import_module(imod)
-                self.__vars["pillib"] = image
-                self.__vars["pillow"] = True
-                self.logger.debug = f"Found: {imod}"
-                return True
-            except Exception:
-                continue
-
-        self.logger.debug = "Not found"
-        return False
+        return dt_obj2.strftime(self._get_data(key=EDPCKeys.PIC_TIME))  # type: ignore
 
     def convert(self, arg: dict) -> bool:
         """Pictures converter."""
         done: bool = False
         convert: bool = False
 
-        local_suffix = os.path.splitext(arg["filename"])[1][1:]
+        local_suffix = os.path.splitext(arg[EDPCKeys.P_FILENAME])[1][1:]
         self.logger.debug = "def convert"
         self.logger.debug = f"Local suffix: {local_suffix}"
-        self.logger.debug = f"Suffix: {self.__vars['suffix']}"
-        self.logger.debug = f"Local pillow flag: {self.__vars['pillow']}"
-        self.logger.debug = f"Local convert flag: {self.__vars['converttype']}"
-        if self.__vars["pillow"] and self.__vars["converttype"]:
-            local_suffix = self.__vars["suffix"]
+        self.logger.debug = f"Suffix: {self._get_data(key=EDPCKeys.SUFFIX)}"
+        self.logger.debug = (
+            f"Local convert flag: {self._get_data(key=EDPCKeys.CONVERT_TYPE)}"
+        )
+        if self._get_data(key=EDPCKeys.CONVERT_TYPE):
+            local_suffix = self._get_data(key=EDPCKeys.SUFFIX)
             convert = True
 
         # check dirs
-        if not Directory().is_directory(self.srcdir.dir):
-            self.logger.error = f"Source directory is invalid: {self.srcdir.dir}"
+        if not Directory().is_directory(self.src_dir.dir):
+            self.logger.error = f"Source directory is invalid: {self.src_dir.dir}"
             return done
-        if not Directory().is_directory(self.dstdir.dir):
-            self.logger.error = f"Destination directory is invalid: {self.dstdir.dir}"
+        if not Directory().is_directory(self.dst_dir.dir):
+            self.logger.error = f"Destination directory is invalid: {self.dst_dir.dir}"
             return done
         # check filename
-        src: str = os.path.join(self.srcdir.dir, arg["filename"])
+        src: str = os.path.join(self.src_dir.dir, arg[EDPCKeys.P_FILENAME])
         if not os.path.exists(src):
             self.logger.error = f"Source file not found: {src}"
             return done
         # generate dst filename
-        name = arg["body"]
+        name = arg[EDPCKeys.P_BODY]
         dst: str = os.path.join(
-            self.dstdir.dir,
-            self.templates["picfile"].format(
-                self.str_time(arg["timestamp"]), name, local_suffix
+            self.dst_dir.dir,
+            self._get_data(key=EDPCKeys.PIC_FILE).format(  # type: ignore
+                self.str_time(arg[EDPCKeys.P_TIMESTAMP]), name, local_suffix
             ),
         )
         # if dst file is present, generate new unique name
@@ -218,9 +203,9 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         while os.path.exists(dst):
             count += 1
             dst = os.path.join(
-                self.dstdir.dir,
-                self.templates["piccountfile"].format(
-                    self.str_time(arg["timestamp"]), name, count, local_suffix
+                self.dst_dir.dir,
+                self._get_data(key=EDPCKeys.PIC_COUNT_FILE).format(  # type: ignore
+                    self.str_time(arg[EDPCKeys.P_TIMESTAMP]), name, count, local_suffix
                 ),
             )
             if count == 99:
@@ -243,7 +228,9 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         # remove src
         try:
             if self.remove:
-                self.logger.debug = f"try to remove file: {arg['filename']}....."
+                self.logger.debug = (
+                    f"try to remove file: {arg[EDPCKeys.P_FILENAME]}....."
+                )
                 os.remove(src)
                 self.logger.debug = "... done"
         except Exception as ex:
@@ -274,7 +261,7 @@ class PicConverter(BLogClient, BMessages, NoDynamicAttributes):
         self.logger.debug = f"DST: {dst}"
         try:
             self.logger.debug = f"try to convert file: {filename1} to: {filename2}....."
-            img = self.__vars["pillib"].open(src)
+            img = Image.open(src)
             img.save(dst)
             self.messages = f"{filename2} converted"
             self.logger.debug = "... done"

@@ -10,7 +10,15 @@
     "python.analysis.typeCheckingMode": "basic",
     "cSpell.words": [
         "EDPC",
+        "offvalue",
+        "onvalue",
         "picconv",
+        "picconvert",
+        "picdstdir",
+        "picmove",
+        "picsrcdir",
+        "pictype",
+        "prefs",
         "thworker"
     ]
 }

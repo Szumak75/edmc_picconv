@@ -14,7 +14,7 @@ import myNotebook as nb
 from config import config
 from edpc.edpc import EDPC
 from edpc.system import Directory, LogLevels
-
+from edpc.keys import EDPCKeys
 
 edpc_object = EDPC()
 
@@ -26,71 +26,69 @@ def plugin_start3(plugin_dir: str) -> str:
     return:         local name of the plugin
     """
     edpc_object.logger.info = (
-        f"Starting plugin {edpc_object.config_dialog.pluginname}..."
+        f"Starting plugin {edpc_object.config_dialog.plugin_name}..."
     )
     edpc_object.logger.debug = f"Plugin dir: {plugin_dir}"
 
     # set loglevel from config
     edpc_object.log_processor.loglevel = (
-        LogLevels().get(config.get_str("loglevel"))
-        if config.get_str("loglevel") is not None
-        and LogLevels().has_key(config.get_str("loglevel"))
+        LogLevels().get(config.get_str(EDPCKeys.CONF_LOG_LEVEL))
+        if config.get_str(EDPCKeys.CONF_LOG_LEVEL) is not None
+        and LogLevels().has_key(config.get_str(EDPCKeys.CONF_LOG_LEVEL))
         else LogLevels().debug
     )  # type: ignore
 
     # config
     edpc_object.config_dialog.pic_src_dir = tk.StringVar(
-        value=config.get_str("picsrcdir")
+        value=config.get_str(EDPCKeys.CONF_PIC_SRC_DIR)
     )
     edpc_object.config_dialog.pic_dst_dir = tk.StringVar(
-        value=config.get_str("picdstdir")
+        value=config.get_str(EDPCKeys.CONF_PIC_DST_DIR)
     )
-    edpc_object.config_dialog.picmove = tk.IntVar(
-        value=config.get_int(key="picmove", default=1)
+    edpc_object.config_dialog.pic_move = tk.IntVar(
+        value=config.get_int(key=EDPCKeys.CONF_PIC_MOVE, default=1)
     )
     edpc_object.config_dialog.pic_convert = tk.IntVar(
-        value=config.get_int(key="picconvert", default=0)
+        value=config.get_int(key=EDPCKeys.CONF_PIC_CONVERT, default=0)
     )
-    edpc_object.config_dialog.pictype = tk.StringVar(
-        value=config.get_str(key="pictype", default="jpg")
+    edpc_object.config_dialog.pic_type = tk.StringVar(
+        value=config.get_str(key=EDPCKeys.CONF_PIC_TYPE, default="jpg")
     )
 
     # init engine
-    picsrcdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
-    if picsrcdir:
-        edpc_object.engine.srcdir.dir = picsrcdir.get()
-    picdstdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
-    if picdstdir:
-        edpc_object.engine.dstdir.dir = picdstdir.get()
-    picmove: Optional[tk.IntVar] = edpc_object.config_dialog.picmove
-    if picmove is not None:
-        edpc_object.engine.remove = picmove.get()
-    picconvert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
-    if picconvert:
-        edpc_object.engine.converttype = picconvert.get()
-    pictype: Optional[tk.StringVar] = edpc_object.config_dialog.pictype
-    if pictype:
-        edpc_object.engine.suffix = pictype.get()
+    pic_src_dir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
+    if pic_src_dir:
+        edpc_object.engine.src_dir.dir = pic_src_dir.get()
+    pic_dst_dir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
+    if pic_dst_dir:
+        edpc_object.engine.dst_dir.dir = pic_dst_dir.get()
+    pic_move: Optional[tk.IntVar] = edpc_object.config_dialog.pic_move
+    if pic_move is not None:
+        edpc_object.engine.remove = pic_move.get()
+    pic_convert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
+    if pic_convert:
+        edpc_object.engine.convert_type = pic_convert.get()
+    pic_type: Optional[tk.StringVar] = edpc_object.config_dialog.pic_type
+    if pic_type:
+        edpc_object.engine.suffix = pic_type.get()
 
     # threading
-    edpc_object.thworker.start()
+    edpc_object.th_worker_engine.start()
 
     edpc_object.logger.info = "Done."
-    return edpc_object.config_dialog.pluginname
+    return edpc_object.config_dialog.plugin_name
 
 
 def plugin_stop() -> None:
     """Stop plugin if EDMC is closing."""
     edpc_object.logger.info = (
-        f"Stopping plugin {edpc_object.config_dialog.pluginname}..."
+        f"Stopping plugin {edpc_object.config_dialog.plugin_name}..."
     )
     edpc_object.shutting_down = True
     edpc_object.qth.put(None)
     time.sleep(3)
-    # edpc_object.thworker.join()
     edpc_object.logger.info = "Done."
     edpc_object.qlog.put(None)
-    # edpc_object.thlog.join()
 
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
@@ -101,9 +99,6 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     is_beta:    If the game is currently a beta version
     """
     frame = edpc_object.config_dialog.create_dialog(parent)
-    if not edpc_object.engine.has_pillow():
-        edpc_object.logger.warning = "Picture type conversion not available."
-        edpc_object.config_dialog.disable_conv_dialogs()
     return frame  # type: ignore
 
 
@@ -115,12 +110,9 @@ def plugin_app(parent: tk.Frame) -> Tuple[tk.Label, tk.Label]:
     # By default widgets inherit the current theme's colors
     label = tk.Label(
         parent,
-        text=f"{edpc_object.config_dialog.pluginname} v{edpc_object.config_dialog.version}:",
+        text=f"{edpc_object.config_dialog.plugin_name} v{edpc_object.config_dialog.version}:",
     )
 
-    # Override theme's foreground color
-    # edpc_object.cdial.status = tk.Label(parent, text="...", foreground="yellow")
-    # or not
     edpc_object.config_dialog.status = tk.Label(parent, text="")
     return label, edpc_object.config_dialog.status  # type: ignore
 
@@ -137,43 +129,43 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
         edpc_object.log_processor.loglevel = loglevel
 
     # save settings
-    picsrcdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
-    picdstdir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
-    picmove: Optional[tk.IntVar] = edpc_object.config_dialog.picmove
-    picconvert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
-    pictype: Optional[tk.StringVar] = edpc_object.config_dialog.pictype
+    pic_src_dir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_src_dir
+    pic_dst_dir: Optional[tk.StringVar] = edpc_object.config_dialog.pic_dst_dir
+    pic_move: Optional[tk.IntVar] = edpc_object.config_dialog.pic_move
+    pic_convert: Optional[tk.IntVar] = edpc_object.config_dialog.pic_convert
+    pic_type: Optional[tk.StringVar] = edpc_object.config_dialog.pic_type
 
     if Directory().is_directory(edpc_object.config_dialog.src_entry.get()):
         edpc_object.config_dialog.pic_src_dir = tk.StringVar(
             value=edpc_object.config_dialog.src_entry.get()
         )
-    if picsrcdir:
-        config.set("picsrcdir", picsrcdir.get())
+    if pic_src_dir:
+        config.set(EDPCKeys.CONF_PIC_SRC_DIR, pic_src_dir.get())
 
     if Directory().is_directory(edpc_object.config_dialog.dst_entry.get()):
         edpc_object.config_dialog.pic_dst_dir = tk.StringVar(
             value=edpc_object.config_dialog.dst_entry.get()
         )
-    if picdstdir:
-        config.set("picdstdir", picdstdir.get())
-    if picmove:
-        config.set("picmove", picmove.get())
-    if picconvert:
-        config.set("picconvert", picconvert.get())
-    if pictype:
-        config.set("pictype", pictype.get())
+    if pic_dst_dir:
+        config.set(EDPCKeys.CONF_PIC_DST_DIR, pic_dst_dir.get())
+    if pic_move:
+        config.set(EDPCKeys.CONF_PIC_MOVE, pic_move.get())
+    if pic_convert:
+        config.set(EDPCKeys.CONF_PIC_CONVERT, pic_convert.get())
+    if pic_type:
+        config.set(EDPCKeys.CONF_PIC_TYPE, pic_type.get())
 
     # engine update
-    if picdstdir:
-        edpc_object.engine.dstdir.dir = picdstdir.get()
-    if picsrcdir:
-        edpc_object.engine.srcdir.dir = picsrcdir.get()
-    if picmove:
-        edpc_object.engine.remove = picmove.get()
-    if picconvert:
-        edpc_object.engine.converttype = picconvert.get()
-    if pictype:
-        edpc_object.engine.suffix = pictype.get()
+    if pic_dst_dir:
+        edpc_object.engine.dst_dir.dir = pic_dst_dir.get()
+    if pic_src_dir:
+        edpc_object.engine.src_dir.dir = pic_src_dir.get()
+    if pic_move:
+        edpc_object.engine.remove = pic_move.get()
+    if pic_convert:
+        edpc_object.engine.convert_type = pic_convert.get()
+    if pic_type:
+        edpc_object.engine.suffix = pic_type.get()
     edpc_object.logger.info = "update complete"
 
 
@@ -194,30 +186,25 @@ def journal_entry(
     entry:      The journal event
     state:      More info about the commander, their ship, and their cargo
     """
-    if entry["event"] == "Screenshot":
+    if entry[EDPCKeys.P_EVENT] == EDPCKeys.P_SCREENSHOT:
         edpc_object.logger.info = "Got a new screenshot event."
-        # edpc_object.logger.info = "cmdr: {}".format(cmdr)
-        # edpc_object.logger.info = "is_beta: {}".format(is_beta)
-        # edpc_object.logger.info = "system: {}".format(system)
-        # edpc_object.logger.info = "station: {}".format(station)
         edpc_object.logger.debug = f"entry: {entry}"
-        # edpc_object.logger.info = "state: {}".format(state)
 
         event: Dict[str, Any] = {}
-        event["cmdr"] = cmdr
-        event["timestamp"] = entry["timestamp"]
-        event["filename"] = entry["Filename"][13:]
-        event["width"] = entry["Width"]
-        event["height"] = entry["Height"]
-        if "System" in entry:
-            event["system"] = entry["System"]
-        if "Body" in entry:
-            event["body"] = entry["Body"]
+        event[EDPCKeys.P_CMDR] = cmdr
+        event[EDPCKeys.P_TIMESTAMP] = entry[EDPCKeys.P_TIMESTAMP]
+        event[EDPCKeys.P_FILENAME] = entry[EDPCKeys.P_FILENAME][13:]
+        event[EDPCKeys.P_WIDTH] = entry[EDPCKeys.P_WIDTH]
+        event[EDPCKeys.P_HEIGHT] = entry[EDPCKeys.P_HEIGHT]
+        if EDPCKeys.P_SYSTEM in entry:
+            event[EDPCKeys.P_SYSTEM] = entry[EDPCKeys.P_SYSTEM]
+        if EDPCKeys.P_BODY in entry:
+            event[EDPCKeys.P_BODY] = entry[EDPCKeys.P_BODY]
         else:
             system = ""
-            if "System" in entry:
-                system = f"{entry['System']} "
-            event["body"] = f"{system}({station})"
+            if EDPCKeys.P_SYSTEM in entry:
+                system = f"{entry[EDPCKeys.P_SYSTEM]} "
+            event[EDPCKeys.P_BODY] = f"{system}({station})"
 
         edpc_object.logger.info = "Put them in the queue..."
         edpc_object.qth.put(event)

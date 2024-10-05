@@ -13,6 +13,7 @@ from typing import Union
 from edpc.jsktoolbox.basetool.data import BData
 
 from edpc.system import LogClient, LogProcessor
+from edpc.keys import EDPCKeys
 
 
 class BLogProcessor(BData):
@@ -21,54 +22,57 @@ class BLogProcessor(BData):
     Container for logger processor methods.
     """
 
-    __logger_queue: Union[Queue, SimpleQueue] = None  # type: ignore
-    __log_processor_engine: LogProcessor = None  # type: ignore
-    __thread_logger: Thread = None  # type: ignore
-
     @property
     def th_log(self) -> Thread:
         """Give me thread logger handler."""
-        return self.__thread_logger
+        return self._get_data(key=EDPCKeys.TH_LOG, default_value=None)  # type: ignore
 
     @th_log.setter
     def th_log(self, value: Thread) -> None:
-        self.__thread_logger = value
+        self._set_data(key=EDPCKeys.TH_LOG, value=value, set_default_type=Thread)
 
     @property
     def qlog(self) -> Union[Queue, SimpleQueue]:
         """Give me access to queue handler."""
-        return self.__logger_queue
+        return self._get_data(key=EDPCKeys.QLOG, default_value=None)  # type: ignore
 
     @qlog.setter
     def qlog(self, value: Union[Queue, SimpleQueue]) -> None:
         """Setter for logging queue."""
-        self.__logger_queue = value
+        self._set_data(
+            key=EDPCKeys.QLOG, value=value, set_default_type=Union[Queue, SimpleQueue]
+        )
 
     @property
     def log_processor(self) -> LogProcessor:
         """Give me handler for log processor."""
-        return self.__log_processor_engine
+        return self._get_data(
+            key=EDPCKeys.LOG_PROCESSOR, default_value=None
+        )  # type: ignore
 
     @log_processor.setter
     def log_processor(self, value: LogProcessor) -> None:
         """Setter for log processor instance."""
-        self.__log_processor_engine = value
+        self._set_data(
+            key=EDPCKeys.LOG_PROCESSOR, value=value, set_default_type=LogProcessor
+        )
 
 
-class BLogClient:
+class BLogClient(BData):
     """BLogClass base class.
 
     Container for logger methods.
     """
 
-    __logger: LogClient = None  # type: ignore
-
     @property
     def logger(self) -> LogClient:
         """Give me logger handler."""
-        return self.__logger
+        return self._get_data(
+            key=EDPCKeys.LOGGER,
+            default_value=None,
+        )  # type: ignore
 
     @logger.setter
     def logger(self, arg: LogClient) -> None:
         """Set logger instance."""
-        self.__logger = arg
+        self._set_data(key=EDPCKeys.LOGGER, value=arg, set_default_type=LogClient)

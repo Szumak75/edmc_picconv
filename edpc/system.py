@@ -6,14 +6,9 @@
   Purpose:
 """
 
-import ctypes
 from inspect import currentframe
 import logging
 import os
-import platform
-import subprocess
-import sys
-import tempfile
 from typing import Union, Optional, List, Dict
 from logging.handlers import RotatingFileHandler
 from queue import Queue, SimpleQueue
@@ -21,13 +16,12 @@ from edpc.jsktoolbox.attribtool import NoDynamicAttributes
 from edpc.jsktoolbox.raisetool import Raise
 
 from edpc.jsktoolbox.systemtool import Env
-from edpc.jsktoolbox.tktool.tools import ClipBoard as Clip
+from edpc.jsktoolbox.basetool.data import BData
+from edpc.keys import EDPCKeys
 
 
-class Directory(NoDynamicAttributes):
+class Directory(BData):
     """Container class to store the directory path."""
-
-    __dir: str = None  # type: ignore
 
     def is_directory(self, path_string: str) -> bool:
         """Check if the given string is a directory.
@@ -41,7 +35,7 @@ class Directory(NoDynamicAttributes):
     @property
     def dir(self) -> str:
         """Property that returns directory string."""
-        return self.__dir
+        return self._get_data(key=EDPCKeys.DIR)  # type: ignore
 
     @dir.setter
     def dir(self, arg: str) -> None:
@@ -50,7 +44,7 @@ class Directory(NoDynamicAttributes):
         given path must exists.
         """
         if self.is_directory(arg):
-            self.__dir = arg
+            self._set_data(key=EDPCKeys.DIR, value=arg, set_default_type=str)
 
 
 class EnvLocal(Env):
@@ -67,7 +61,7 @@ class EnvLocal(Env):
         return directory
 
 
-class Log(NoDynamicAttributes):
+class Log(BData):
     """Create Log container class."""
 
     __data: List[str] = None  # type: ignore
@@ -83,7 +77,7 @@ class Log(NoDynamicAttributes):
             raise Raise.error(
                 f"Int type level expected, '{type(level)}' received.",
                 TypeError,
-                self.__class__.__name__,
+                self._c_name,
                 currentframe(),
             )
 

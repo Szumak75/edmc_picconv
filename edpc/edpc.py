@@ -14,100 +14,111 @@ from edpc.dialogs import ConfigDialog
 from edpc.system import LogClient, LogProcessor
 
 
-from edpc.jsktoolbox.attribtool import NoDynamicAttributes
-from edpc.jsktoolbox.raisetool import Raise
+from edpc.jsktoolbox.datetool import Timestamp
+from edpc.keys import EDPCKeys
 
-
-from inspect import currentframe
 import time
 from queue import Queue, SimpleQueue, Empty
 from threading import Thread
 from typing import List, Union
 
 
-class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
-    """edpc_object main class."""
-
-    __pluginname: str = None  # type: ignore
-    __shutting_down: bool = False
-
-    __th_queue: Union[Queue, SimpleQueue] = None  # type: ignore
-    __th_worker: Thread = None  # type: ignore
-
-    config_dialog: ConfigDialog = None  # type: ignore
-    engine: PicConverter = None  # type: ignore
+class EDPC(BLogProcessor, BLogClient):
+    """EDPC main class."""
 
     def __init__(self) -> None:
         """Initialize main class."""
         self.shutting_down = False
 
-        self.pluginname = "EDPC"
-        version = "0.3.10"
+        self.plugin_name = "EDPC"
+        version = "0.4.0"
 
         # logging subsystem
         self.qlog = SimpleQueue()
-        self.log_processor = LogProcessor(self.pluginname)
+        self.log_processor = LogProcessor(self.plugin_name)
         self.logger = LogClient(self.qlog)
 
         # logging thread
         self.th_log = Thread(
-            target=self.th_logger, name=f"{self.pluginname} log worker", daemon=True
+            target=self._th_logger, name=f"{self.plugin_name} log worker", daemon=True
         )
         self.th_log.start()
 
         # config dialog
         self.config_dialog = ConfigDialog(self.qlog)
-        self.config_dialog.pluginname = self.pluginname
+        self.config_dialog.plugin_name = self.plugin_name
         self.config_dialog.version = version
 
         # worker thread
-        self.thworker = Thread(
-            target=self.th_worker,
-            name=f"{self.config_dialog.pluginname} worker",
+        self.th_worker_engine = Thread(
+            target=self._th_worker,
+            name=f"{self.config_dialog.plugin_name} worker",
             daemon=True,
         )
 
-        self.__th_queue = SimpleQueue()
+        self._set_data(
+            key=EDPCKeys.TH_QUEUE,
+            value=SimpleQueue(),
+            set_default_type=Union[Queue, SimpleQueue],
+        )
         self.engine = PicConverter(self.qlog)
-        self.engine.has_pillow()
 
     @property
-    def thworker(self) -> Thread:
+    def engine(self) -> PicConverter:
+        """Get PicConverter instance."""
+        return self._get_data(
+            key=EDPCKeys.ENGINE,
+        )  # type: ignore
+
+    @engine.setter
+    def engine(self, value: PicConverter) -> None:
+        """Set PicConverter instance."""
+        self._set_data(key=EDPCKeys.ENGINE, value=value, set_default_type=PicConverter)
+
+    @property
+    def config_dialog(self) -> ConfigDialog:
+        return self._get_data(key=EDPCKeys.CONFIG_DIALOG)  # type: ignore
+
+    @config_dialog.setter
+    def config_dialog(self, value: ConfigDialog) -> None:
+        self._set_data(
+            key=EDPCKeys.CONFIG_DIALOG, value=value, set_default_type=ConfigDialog
+        )
+
+    @property
+    def th_worker_engine(self) -> Thread:
         """Give me access to thworker variable."""
-        return self.__th_worker
+        return self._get_data(key=EDPCKeys.TH_WORKER)  # type: ignore
 
-    @thworker.setter
-    def thworker(self, value: Thread) -> None:
-        self.__th_worker = value
+    @th_worker_engine.setter
+    def th_worker_engine(self, value: Thread) -> None:
+        self._set_data(
+            key=EDPCKeys.TH_WORKER,
+            value=value,
+            set_default_type=Thread,
+        )
 
     @property
-    def pluginname(self) -> str:
+    def plugin_name(self) -> str:
         """Give me access to pluginname variable."""
-        if self.__pluginname is None:
-            self.__pluginname = ""
-        return self.__pluginname
+        return self._get_data(
+            key=EDPCKeys.PLUGIN_NAME, default_value=""
+        )  # type: ignore
 
-    @pluginname.setter
-    def pluginname(self, value: str) -> None:
-        self.__pluginname = value
+    @plugin_name.setter
+    def plugin_name(self, value: str) -> None:
+        self._set_data(key=EDPCKeys.PLUGIN_NAME, value=value, set_default_type=str)
 
     @property
     def shutting_down(self) -> bool:
         """Give me access to shutting_down flag."""
-        return self.__shutting_down
+        return self._get_data(key=EDPCKeys.SHUTTING_DOWN, default_value=False)  # type: ignore
 
     @shutting_down.setter
     def shutting_down(self, value: bool) -> None:
-        if not isinstance(value, bool):
-            raise Raise.error(
-                f"Boolean type expected, '{type(value)}' received.",
-                TypeError,
-                self.__class__.__name__,
-                currentframe(),
-            )
-        self.__shutting_down = value
+        self._set_data(key=EDPCKeys.SHUTTING_DOWN, value=value, set_default_type=bool)
 
-    def th_logger(self) -> None:
+    def _th_logger(self) -> None:
         """Def th_logger - thread logs processor."""
         self.logger.info = "Starting logger worker"
         while not self.shutting_down:
@@ -116,13 +127,13 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
                 break
             self.log_processor.send(log)
 
-    def th_worker(self) -> None:
+    def _th_worker(self) -> None:
         """Def th_worker - thread processor."""
         self.logger.info = "Starting worker..."
         idle: List[str] = [".", "..", "...", "...."]
         idle_idx = 0
 
-        timestamp = int(time.time())
+        timestamp = Timestamp.now()
 
         while not self.shutting_down:
             idle_idx += 1
@@ -133,7 +144,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
             timestamp: int = self.queue_processor(timestamp)
             try:
                 if (
-                    timestamp < int(time.time())
+                    timestamp < Timestamp.now()
                     and self.config_dialog.status is not None
                 ):
                     self.config_dialog.status["text"] = idle[idle_idx]
@@ -150,7 +161,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
     @property
     def qth(self) -> Union[Queue, SimpleQueue]:
         """Give me th queue."""
-        return self.__th_queue
+        return self._get_data(key=EDPCKeys.TH_QUEUE)  # type: ignore
 
     def queue_processor(self, timestamp: int) -> int:
         """Convert queue items."""
@@ -161,7 +172,7 @@ class EDPC(BLogProcessor, BLogClient, NoDynamicAttributes):
         while not self.qth.empty() and not self.shutting_down:
             test = True
             self.logger.info = "Start processing the queue..."
-            timestamp = int(time.time()) + time_break
+            timestamp = Timestamp.now() + time_break
             try:
                 item = self.qth.get(block=False)
                 self.logger.debug = f"queue_processor: item = {item}"
