@@ -2,6 +2,7 @@
 
 SCRIPT_DIR=`dirname $0`
 SUCCESS=0
+LOCAL_LIBS='edpc'
 
 cd $SCRIPT_DIR
 cd ..
@@ -16,7 +17,7 @@ if [ -d /tmp ]; then
     cd JskToolBox
     JSK_DIR=`pwd`
 
-    cd $PLUG_DIR
+    cd $PLUG_DIR/$LOCAL_LIBS
     if [ -d jsktoolbox.old ]; then
         rm -rf jsktoolbox.old
     fi
