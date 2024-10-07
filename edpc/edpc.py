@@ -8,10 +8,10 @@
 """
 
 
-from edpc.base_log import BLogClient, BLogProcessor
+from edpc.jsktoolbox.edmctool.base import BLogClient, BLogProcessor
+from edpc.jsktoolbox.edmctool.logs import LogClient, LogProcessor
 from edpc.converter import PicConverter
 from edpc.dialogs import ConfigDialog
-from edpc.system import LogClient, LogProcessor
 
 
 from edpc.jsktoolbox.datetool import Timestamp
@@ -31,7 +31,7 @@ class EDPC(BLogProcessor, BLogClient):
         self.shutting_down = False
 
         self.plugin_name = "EDPC"
-        version = "0.4.0"
+        version = "0.4.1"
 
         # logging subsystem
         self.qlog = SimpleQueue()
@@ -133,7 +133,7 @@ class EDPC(BLogProcessor, BLogClient):
         idle: List[str] = [".", "..", "...", "...."]
         idle_idx = 0
 
-        timestamp = Timestamp.now()
+        timestamp = Timestamp.now()  # type: ignore
 
         while not self.shutting_down:
             idle_idx += 1
@@ -172,7 +172,7 @@ class EDPC(BLogProcessor, BLogClient):
         while not self.qth.empty() and not self.shutting_down:
             test = True
             self.logger.info = "Start processing the queue..."
-            timestamp = Timestamp.now() + time_break
+            timestamp = Timestamp.now() + time_break  # type: ignore
             try:
                 item = self.qth.get(block=False)
                 self.logger.debug = f"queue_processor: item = {item}"

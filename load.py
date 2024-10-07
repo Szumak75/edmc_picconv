@@ -13,7 +13,9 @@ from typing import Any, Dict, Optional, Tuple
 import myNotebook as nb
 from config import config
 from edpc.edpc import EDPC
-from edpc.system import Directory, LogLevels
+from edpc.jsktoolbox.edmctool.system import Directory
+from edpc.jsktoolbox.edmctool.logs import LogLevels
+
 from edpc.keys import EDPCKeys
 
 edpc_object = EDPC()

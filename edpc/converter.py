@@ -17,9 +17,10 @@ from typing import Optional, Union
 from PIL import Image
 
 from edpc.jsktoolbox.raisetool import Raise
-from edpc.base_log import BLogClient
+from edpc.jsktoolbox.edmctool.base import BLogClient
+from edpc.jsktoolbox.edmctool.logs import LogClient
+from edpc.jsktoolbox.edmctool.system import Directory
 from edpc.base_message import BMessages
-from edpc.system import Directory, LogClient
 from edpc.keys import EDPCKeys
 
 
