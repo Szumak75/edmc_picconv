@@ -112,7 +112,7 @@ def plugin_app(parent: tk.Frame) -> Tuple[tk.Label, tk.Label]:
     # By default widgets inherit the current theme's colors
     label = tk.Label(
         parent,
-        text=f"{edpc_object.config_dialog.plugin_name} v{edpc_object.config_dialog.version}:",
+        text=f"{edpc_object.config_dialog.plugin_name}:",
     )
 
     edpc_object.config_dialog.status = tk.Label(parent, text="")
